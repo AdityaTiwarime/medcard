@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedCard AI — Medical Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --crimson: #7B1C2E; --crimson-dark: #4A0E1A; --crimson-light: #A83248;
+  --amber: #D4802A; --amber-light: #E8A04A;
+  --cream: #FAF5EE; --cream-dark: #F0E8DC;
+  --dark: #1A0A0F; --white: #FFFFFF; --muted: #8A7070;
+  --green: #2D7A4F; --red: #C0392B; --blue: #1A5276;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);}
+
+.top-bar {
+  background: var(--crimson-dark);
+  padding: 1rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.logo {font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--white);}
+.logo span {color:var(--amber);}
+.scan-badge {
+  font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.2em;
+  text-transform:uppercase;color:rgba(212,128,42,0.8);
+  border:1px solid rgba(212,128,42,0.3);padding:0.25rem 0.7rem;border-radius:20px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #6B1525 0%, #3A0A14 55%, #5A1020 100%);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at 60% 40%,rgba(212,128,42,0.18) 0%,transparent 60%);
+}
+.hero-icon {font-size:3rem;margin-bottom:0.8rem;position:relative;z-index:2;}
+.hero-title {
+  font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;
+  color:var(--white);position:relative;z-index:2;margin-bottom:0.5rem;
+}
+.hero-sub {
+  font-size:0.9rem;color:rgba(250,245,238,0.65);position:relative;z-index:2;
+  max-width:480px;margin:0 auto;
+}
+.alert-box {
+  background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 10px; padding: 0.9rem 1.2rem;
+  display: flex; align-items: center; gap: 0.7rem;
+  max-width: 560px; margin: 1.2rem auto 0;
+  position:relative;z-index:2;
+}
+.alert-box span {font-size:1.2rem;}
+.alert-box p {font-size:0.8rem;color:rgba(250,245,238,0.8);}
+.alert-box strong {color:rgba(250,245,238,0.95);}
+
+.container {max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem;}
+
+.section-title {
+  font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;
+  color:var(--crimson-dark);margin-bottom:0.3rem;
+}
+.section-sub {font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;}
+
+.report-card {
+  background:var(--white);border-radius:12px;padding:1.4rem 1.5rem;
+  border:1px solid var(--cream-dark);box-shadow:0 2px 12px rgba(74,14,26,0.06);
+  display:flex;gap:1.2rem;align-items:flex-start;margin-bottom:1rem;
+  transition:box-shadow 0.2s;
+}
+.report-card:hover {box-shadow:0 6px 24px rgba(74,14,26,0.12);}
+.report-icon {
+  width:50px;height:50px;border-radius:12px;
+  background:rgba(212,128,42,0.1);display:flex;align-items:center;
+  justify-content:center;font-size:1.6rem;flex-shrink:0;
+}
+.report-body {flex:1;}
+.report-name {font-weight:700;font-size:1rem;color:var(--crimson-dark);margin-bottom:0.25rem;}
+.report-meta {font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center;}
+.badge {display:inline-block;padding:0.2rem 0.75rem;border-radius:20px;font-size:0.68rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;}
+.badge.green {background:rgba(45,122,79,0.1);color:var(--green);}
+.badge.amber {background:rgba(212,128,42,0.1);color:var(--amber);}
+.badge.red {background:rgba(192,57,43,0.1);color:var(--red);}
+.badge.blue {background:rgba(26,82,118,0.1);color:var(--blue);}
+.report-notes {font-size:0.83rem;color:var(--dark);line-height:1.6;padding:0.7rem;background:var(--cream);border-radius:8px;}
+.report-expand {
+  background:none;border:1.5px solid var(--cream-dark);border-radius:6px;
+  font-size:0.75rem;font-weight:600;padding:0.4rem 0.9rem;cursor:pointer;
+  color:var(--crimson-dark);font-family:'DM Sans',sans-serif;
+  transition:all 0.15s;margin-top:0.7rem;
+}
+.report-expand:hover {border-color:var(--amber);color:var(--amber);}
+
+.detail-panel {
+  display:none;margin-top:0.8rem;
+  border-top:1px solid var(--cream-dark);padding-top:0.9rem;
+}
+.detail-panel.open {display:block;}
+.detail-grid {display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.8rem;}
+.detail-item {background:var(--cream);border-radius:8px;padding:0.7rem 0.9rem;}
+.detail-label {font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.2rem;}
+.detail-val {font-size:0.88rem;font-weight:600;color:var(--crimson-dark);}
+
+.summary-bar {
+  display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;
+}
+.summary-chip {
+  background:var(--white);border-radius:10px;padding:1rem 1.3rem;
+  border:1px solid var(--cream-dark);box-shadow:0 2px 8px rgba(74,14,26,0.04);
+  flex:1;min-width:120px;text-align:center;
+}
+.chip-num {font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;color:var(--crimson-dark);}
+.chip-lbl {font-size:0.7rem;color:var(--muted);margin-top:0.2rem;letter-spacing:0.05em;}
+
+.footer {
+  text-align:center;padding:2.5rem 1rem;border-top:1px solid var(--cream-dark);margin-top:1rem;
+}
+.footer p {font-size:0.78rem;color:var(--muted);margin-bottom:0.3rem;}
+.footer strong {color:var(--crimson-dark);}
+
+@keyframes fadeUp {from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.fade-up {animation:fadeUp 0.5s ease both;}
+.fade-up:nth-child(2){animation-delay:0.1s;}
+.fade-up:nth-child(3){animation-delay:0.2s;}
+.fade-up:nth-child(4){animation-delay:0.3s;}
+.fade-up:nth-child(5){animation-delay:0.4s;}
+.fade-up:nth-child(6){animation-delay:0.5s;}
+.fade-up:nth-child(7){animation-delay:0.6s;}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Med<span>Card</span> AI</div>
+  <div class="scan-badge">📷 QR Access · Read Only</div>
+</div>
+
+<div class="hero">
+  <div class="hero-icon">🏥</div>
+  <div class="hero-title">Medical Reports Viewer</div>
+  <div class="hero-sub">Accessed via secure QR scan — Silver Oak University · MedCard AI Platform 2026</div>
+  <div class="alert-box">
+    <span>🔒</span>
+    <p><strong>Emergency Access Mode</strong> — Displaying anonymized reports for triage use. No personal identifiers shown. Authorized medical staff only.</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="summary-bar">
+    <div class="summary-chip">
+      <div class="chip-num">7</div>
+      <div class="chip-lbl">Total Reports</div>
+    </div>
+    <div class="summary-chip">
+      <div class="chip-num" style="color:var(--red);">2</div>
+      <div class="chip-lbl">Abnormal</div>
+    </div>
+    <div class="summary-chip">
+      <div class="chip-num" style="color:var(--amber);">1</div>
+      <div class="chip-lbl">Under Review</div>
+    </div>
+    <div class="summary-chip">
+      <div class="chip-num" style="color:var(--green);">4</div>
+      <div class="chip-lbl">Normal</div>
+    </div>
+  </div>
+
+  <div class="section-title">Patient Medical Reports</div>
+  <div class="section-sub">All reports from MedCard AI records — displayed without personal identifiers per emergency access protocol.</div>
+
+  <!-- Report 1 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">🧪</div>
+    <div class="report-body">
+      <div class="report-name">Complete Blood Count (CBC)</div>
+      <div class="report-meta">
+        <span>10 Mar 2026</span>
+        <span>Lab / Hematology</span>
+        <span class="badge green">Normal</span>
+      </div>
+      <div class="report-notes">Hemoglobin 13.2 g/dL — within normal range. WBC count 7,400/µL normal. Platelet count 2.1 lakh/µL adequate. RBC morphology unremarkable.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Hemoglobin</div><div class="detail-val">13.2 g/dL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">WBC Count</div><div class="detail-val">7,400 /µL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Platelet Count</div><div class="detail-val">2.1 Lakh /µL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Hematocrit</div><div class="detail-val">39.8% ✓</div></div>
+          <div class="detail-item"><div class="detail-label">MCV</div><div class="detail-val">86.4 fL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Neutrophils</div><div class="detail-val">58% ✓</div></div>
+        </div>
+        <div class="report-notes"><strong>Interpretation:</strong> All parameters within reference range. No evidence of anemia, infection, or hematological disorder. Repeat in 6 months as routine screening.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 2 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">❤️</div>
+    <div class="report-body">
+      <div class="report-name">12-Lead ECG Report</div>
+      <div class="report-meta">
+        <span>18 Feb 2026</span>
+        <span>Cardiac / Electrophysiology</span>
+        <span class="badge green">Normal</span>
+      </div>
+      <div class="report-notes">Sinus rhythm at 74 bpm. PR interval 162ms, QRS duration 88ms, QTc 410ms — all within normal limits. No ST changes or ischemic patterns detected.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Heart Rate</div><div class="detail-val">74 bpm ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Rhythm</div><div class="detail-val">Normal Sinus ✓</div></div>
+          <div class="detail-item"><div class="detail-label">PR Interval</div><div class="detail-val">162 ms ✓</div></div>
+          <div class="detail-item"><div class="detail-label">QRS Duration</div><div class="detail-val">88 ms ✓</div></div>
+          <div class="detail-item"><div class="detail-label">QTc Interval</div><div class="detail-val">410 ms ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Axis</div><div class="detail-val">Normal ✓</div></div>
+        </div>
+        <div class="report-notes"><strong>Conclusion:</strong> Normal ECG. No evidence of arrhythmia, bundle branch block, or myocardial ischemia. Cardiac function appears stable. Continue current management.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 3 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">🩻</div>
+    <div class="report-body">
+      <div class="report-name">Chest X-Ray (PA View)</div>
+      <div class="report-meta">
+        <span>22 Jan 2026</span>
+        <span>Radiology</span>
+        <span class="badge amber">Under Review</span>
+      </div>
+      <div class="report-notes">Mild consolidation noted in the right lower lobe. Cardiac silhouette within normal limits. No pleural effusion. Costophrenic angles clear. Mediastinum not widened.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Lungs</div><div class="detail-val" style="color:var(--amber);">Mild Consolidation ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Cardiac Silhouette</div><div class="detail-val">Normal ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Pleural Space</div><div class="detail-val">No Effusion ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Mediastinum</div><div class="detail-val">Not Widened ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Diaphragm</div><div class="detail-val">Normal ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Follow-up</div><div class="detail-val" style="color:var(--amber);">Recommended ⚠</div></div>
+        </div>
+        <div class="report-notes" style="border-left:3px solid var(--amber);"><strong>⚠ Radiologist Note:</strong> Mild right lower lobe consolidation may represent early pneumonitis or atelectasis. Clinical correlation advised. Follow-up X-ray in 4–6 weeks recommended to ensure resolution.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 4 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">🫁</div>
+    <div class="report-body">
+      <div class="report-name">Spirometry / Pulmonary Function Test</div>
+      <div class="report-meta">
+        <span>01 Mar 2026</span>
+        <span>Pulmonology</span>
+        <span class="badge red">Abnormal</span>
+      </div>
+      <div class="report-notes">FEV1 reduced to 72% of predicted value. FEV1/FVC ratio 0.68 — indicative of mild obstructive pattern. Consistent with mild persistent asthma or early COPD. Bronchodilator response test recommended.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">FEV1</div><div class="detail-val" style="color:var(--red);">72% predicted ✗</div></div>
+          <div class="detail-item"><div class="detail-label">FVC</div><div class="detail-val">84% predicted ✓</div></div>
+          <div class="detail-item"><div class="detail-label">FEV1/FVC Ratio</div><div class="detail-val" style="color:var(--red);">0.68 (↓ Low) ✗</div></div>
+          <div class="detail-item"><div class="detail-label">TLC</div><div class="detail-val">96% predicted ✓</div></div>
+          <div class="detail-item"><div class="detail-label">PEFR</div><div class="detail-val" style="color:var(--amber);">78% predicted ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Pattern</div><div class="detail-val" style="color:var(--red);">Obstructive ✗</div></div>
+        </div>
+        <div class="report-notes" style="border-left:3px solid var(--red);"><strong>🔴 Clinical Note:</strong> Findings consistent with mild-to-moderate obstructive airways disease. Recommend bronchodilator reversibility testing. Review current asthma management plan. Consider pulmonologist referral if symptoms worsen.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 5 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">🌿</div>
+    <div class="report-body">
+      <div class="report-name">Allergy Panel — IgE Serology</div>
+      <div class="report-meta">
+        <span>10 Feb 2026</span>
+        <span>Allergy / Immunology</span>
+        <span class="badge green">Normal</span>
+      </div>
+      <div class="report-notes">Specific IgE elevated for dust mites (Class 3) and tree pollen (Class 2). Total serum IgE 142 IU/mL (slightly elevated). Penicillin allergy confirmed via skin prick test. No food allergens detected.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Total IgE</div><div class="detail-val" style="color:var(--amber);">142 IU/mL ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Dust Mite (D. pteronyssinus)</div><div class="detail-val" style="color:var(--amber);">Class 3 ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Tree Pollen</div><div class="detail-val" style="color:var(--amber);">Class 2 ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Penicillin</div><div class="detail-val" style="color:var(--red);">Positive ✗ ALERT</div></div>
+          <div class="detail-item"><div class="detail-label">Food Allergens</div><div class="detail-val">Negative ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Latex</div><div class="detail-val">Negative ✓</div></div>
+        </div>
+        <div class="report-notes" style="border-left:3px solid var(--red);"><strong>🚨 ALLERGY ALERT:</strong> Patient has confirmed Penicillin allergy — ensure this is flagged in all clinical systems. Avoid all Penicillin-class antibiotics and cross-reactive cephalosporins. Alternative antibiotics should be prescribed.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 6 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">🩸</div>
+    <div class="report-body">
+      <div class="report-name">Lipid Profile Panel</div>
+      <div class="report-meta">
+        <span>14 Jan 2026</span>
+        <span>Biochemistry</span>
+        <span class="badge red">Abnormal</span>
+      </div>
+      <div class="report-notes">Total cholesterol 224 mg/dL (borderline high). LDL 148 mg/dL (above optimal). HDL 42 mg/dL (borderline low for female). Triglycerides 188 mg/dL (borderline high). Cardiovascular risk assessment recommended.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Total Cholesterol</div><div class="detail-val" style="color:var(--amber);">224 mg/dL ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">LDL Cholesterol</div><div class="detail-val" style="color:var(--red);">148 mg/dL ✗</div></div>
+          <div class="detail-item"><div class="detail-label">HDL Cholesterol</div><div class="detail-val" style="color:var(--amber);">42 mg/dL ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">Triglycerides</div><div class="detail-val" style="color:var(--amber);">188 mg/dL ⚠</div></div>
+          <div class="detail-item"><div class="detail-label">VLDL</div><div class="detail-val">37.6 mg/dL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">TC/HDL Ratio</div><div class="detail-val" style="color:var(--red);">5.3 (High Risk) ✗</div></div>
+        </div>
+        <div class="report-notes" style="border-left:3px solid var(--red);"><strong>🔴 Clinical Note:</strong> Dyslipidemia pattern noted. Elevated LDL and reduced HDL increases cardiovascular risk — especially in context of hypertension. Lifestyle modification (diet, exercise) strongly advised. Consider statin therapy if LDL remains elevated after 3 months.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report 7 -->
+  <div class="report-card fade-up">
+    <div class="report-icon">💉</div>
+    <div class="report-body">
+      <div class="report-name">Fasting Blood Glucose & HbA1c</div>
+      <div class="report-meta">
+        <span>05 Mar 2026</span>
+        <span>Endocrinology / Biochemistry</span>
+        <span class="badge green">Normal</span>
+      </div>
+      <div class="report-notes">Fasting blood glucose 5.1 mmol/L (normal). HbA1c 5.4% — well within non-diabetic range. No evidence of pre-diabetes or insulin resistance at this time.</div>
+      <button class="report-expand" onclick="toggleDetail(this)">▼ View Full Report</button>
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-item"><div class="detail-label">Fasting Glucose</div><div class="detail-val">5.1 mmol/L ✓</div></div>
+          <div class="detail-item"><div class="detail-label">HbA1c</div><div class="detail-val">5.4% ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Fasting Insulin</div><div class="detail-val">8.2 µIU/mL ✓</div></div>
+          <div class="detail-item"><div class="detail-label">HOMA-IR</div><div class="detail-val">1.86 ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Post-prandial Glucose</div><div class="detail-val">7.2 mmol/L ✓</div></div>
+          <div class="detail-item"><div class="detail-label">Diabetes Status</div><div class="detail-val" style="color:var(--green);">Non-Diabetic ✓</div></div>
+        </div>
+        <div class="report-notes"><strong>Interpretation:</strong> Excellent glycaemic control. No indication of diabetes or pre-diabetes. Maintain healthy diet and exercise. Repeat HbA1c annually or if symptoms develop.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p><strong>MedCard AI</strong> — AI Integrated Medical E-Card Platform</p>
+  <p>Silver Oak University · Project Fair 2026 · Emergency QR Access Mode</p>
+  <p style="margin-top:0.6rem;font-size:0.7rem;">⚠ This view is for authorized medical personnel only. Data shown for triage and emergency reference use. All information is protected under institutional healthcare data policy.</p>
+</div>
+
+<script>
+function toggleDetail(btn) {
+  const panel = btn.nextElementSibling;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open');
+  btn.textContent = isOpen ? '▼ View Full Report' : '▲ Close Report';
+}
+</script>
+</body>
+</html>

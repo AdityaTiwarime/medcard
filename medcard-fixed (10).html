@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedCard AI — Integrated Medical E-Card Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- QR generated via built-in canvas -->
+<style>
+:root {
+  --crimson: #7B1C2E; --crimson-dark: #4A0E1A; --crimson-light: #A83248;
+  --amber: #D4802A; --amber-light: #E8A04A;
+  --cream: #FAF5EE; --cream-dark: #F0E8DC;
+  --dark: #1A0A0F; --white: #FFFFFF; --muted: #8A7070;
+  --green: #2D7A4F; --red: #C0392B; --blue: #1A5276;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--dark);overflow-x:hidden;}
+
+/* ========== LANDING ========== */
+#landing {
+  min-height:100vh; background:var(--crimson-dark);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; overflow:hidden; text-align:center; padding:2rem;
+}
+#landing::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse at 60% 40%,rgba(212,128,42,0.18) 0%,transparent 60%),
+             radial-gradient(ellipse at 20% 80%,rgba(123,28,46,0.5) 0%,transparent 50%);
+}
+.grid-bg {
+  position:absolute; inset:0;
+  background-image:linear-gradient(rgba(250,245,238,0.03) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(250,245,238,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+.land-logo {font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--white);letter-spacing:-0.02em;position:relative;z-index:2;margin-bottom:0.4rem;animation:fadeUp 0.6s ease both;}
+.land-logo span{color:var(--amber);}
+.land-sub {font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,128,42,0.7);position:relative;z-index:2;margin-bottom:2.5rem;animation:fadeUp 0.6s 0.1s ease both;}
+.land-title {font-family:'Playfair Display',serif;font-size:clamp(2.5rem,6vw,5rem);font-weight:900;color:var(--white);line-height:1.05;letter-spacing:-0.02em;position:relative;z-index:2;margin-bottom:1.2rem;animation:fadeUp 0.7s 0.2s ease both;}
+.land-title .accent{color:var(--amber);}
+.land-desc {font-size:1.05rem;color:rgba(250,245,238,0.65);max-width:520px;line-height:1.7;position:relative;z-index:2;margin:0 auto 2.5rem;animation:fadeUp 0.7s 0.3s ease both;}
+.land-portals {display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;position:relative;z-index:2;animation:fadeUp 0.7s 0.4s ease both;}
+.portal-btn {padding:0.9rem 2rem;border-radius:8px;font-size:0.88rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;border:none;transition:all 0.2s;font-family:'DM Sans',sans-serif;}
+.portal-btn.patient{background:var(--amber);color:var(--dark);}
+.portal-btn.patient:hover{background:var(--amber-light);transform:translateY(-2px);}
+.portal-btn.doctor{background:rgba(250,245,238,0.1);color:var(--cream);border:1.5px solid rgba(250,245,238,0.3);}
+.portal-btn.doctor:hover{background:rgba(250,245,238,0.18);transform:translateY(-2px);}
+.portal-btn.admin{background:rgba(250,245,238,0.05);color:rgba(250,245,238,0.6);border:1.5px solid rgba(250,245,238,0.15);}
+.portal-btn.admin:hover{background:rgba(250,245,238,0.1);}
+.land-stats {display:flex;gap:3rem;margin-top:4rem;position:relative;z-index:2;padding-top:2.5rem;border-top:1px solid rgba(250,245,238,0.1);animation:fadeUp 0.7s 0.5s ease both;flex-wrap:wrap;justify-content:center;}
+.ls-val{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--amber);}
+.ls-lbl{font-size:0.72rem;color:rgba(250,245,238,0.45);letter-spacing:0.08em;text-transform:uppercase;margin-top:0.2rem;}
+
+/* AI Feature Pills on Landing */
+.ai-pills{display:flex;gap:0.6rem;flex-wrap:wrap;justify-content:center;margin-bottom:2rem;position:relative;z-index:2;animation:fadeUp 0.7s 0.35s ease both;}
+.ai-pill{background:rgba(212,128,42,0.12);border:1px solid rgba(212,128,42,0.3);color:rgba(250,245,238,0.75);font-size:0.72rem;padding:0.3rem 0.8rem;border-radius:20px;font-family:'DM Mono',monospace;letter-spacing:0.08em;}
+
+/* ========== AUTH OVERLAY ========== */
+.auth-overlay {display:none;position:fixed;inset:0;background:rgba(26,10,15,0.92);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.auth-overlay.show{display:flex;}
+.auth-box {background:var(--cream);border-radius:16px;padding:2.5rem;width:100%;max-width:420px;position:relative;box-shadow:0 40px 80px rgba(0,0,0,0.4);animation:scaleIn 0.3s ease;}
+.auth-close {position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);}
+.auth-title {font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:var(--crimson-dark);margin-bottom:0.3rem;}
+.auth-role-badge {display:inline-block;font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);border:1px solid rgba(212,128,42,0.4);padding:0.2rem 0.6rem;border-radius:20px;margin-bottom:1.5rem;}
+.form-group{margin-bottom:1.2rem;}
+.form-label {display:block;font-size:0.78rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--crimson-dark);margin-bottom:0.4rem;}
+.form-input {width:100%;padding:0.75rem 1rem;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:0.92rem;font-family:'DM Sans',sans-serif;background:var(--white);color:var(--dark);transition:border-color 0.2s;}
+.form-input:focus{outline:none;border-color:var(--amber);}
+.btn-submit {width:100%;padding:0.85rem;background:var(--crimson-dark);color:var(--white);border:none;border-radius:8px;font-size:0.88rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.2s;margin-top:0.5rem;}
+.btn-submit:hover{background:var(--amber);color:var(--dark);}
+.auth-switch {text-align:center;margin-top:1rem;font-size:0.83rem;color:var(--muted);}
+.auth-switch a{color:var(--crimson);cursor:pointer;font-weight:600;}
+.otp-hint{font-size:0.75rem;color:var(--muted);margin-top:0.4rem;}
+.demo-creds{background:rgba(212,128,42,0.08);border:1px solid rgba(212,128,42,0.2);border-radius:8px;padding:0.75rem;margin-bottom:1rem;font-size:0.78rem;color:var(--muted);}
+.demo-creds strong{color:var(--amber);}
+
+/* ========== APP SHELL ========== */
+#app{display:none;}
+.app-nav {position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0.9rem 2.5rem;background:rgba(250,245,238,0.95);backdrop-filter:blur(12px);border-bottom:1px solid rgba(123,28,46,0.1);box-shadow:0 2px 20px rgba(74,14,26,0.06);}
+.app-logo{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--crimson-dark);}
+.app-logo span{color:var(--amber);}
+.nav-user{display:flex;align-items:center;gap:1rem;}
+.nav-user-name{font-size:0.85rem;font-weight:600;color:var(--crimson-dark);}
+.nav-role{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);}
+.btn-logout{padding:0.45rem 1.1rem;background:none;border:1.5px solid var(--crimson-dark);border-radius:6px;font-size:0.78rem;font-weight:600;color:var(--crimson-dark);cursor:pointer;letter-spacing:0.05em;transition:all 0.2s;}
+.btn-logout:hover{background:var(--crimson-dark);color:var(--white);}
+
+.app-body{padding-top:64px;min-height:100vh;display:flex;}
+
+/* SIDEBAR */
+.sidebar {width:240px;flex-shrink:0;background:var(--crimson-dark);min-height:calc(100vh - 64px);padding:1.5rem 0;position:sticky;top:64px;height:calc(100vh - 64px);overflow-y:auto;}
+.sidebar-section{padding:0.5rem 1.2rem;margin-bottom:0.3rem;}
+.sidebar-section-label {font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,128,42,0.5);margin-bottom:0.6rem;padding:0 0.3rem;}
+.sidebar-item {display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.8rem;border-radius:8px;cursor:pointer;transition:background 0.15s;color:rgba(250,245,238,0.6);font-size:0.88rem;}
+.sidebar-item:hover{background:rgba(250,245,238,0.08);color:var(--cream);}
+.sidebar-item.active{background:rgba(212,128,42,0.2);color:var(--amber);}
+.sidebar-item .icon{font-size:1rem;width:20px;text-align:center;}
+
+/* MAIN CONTENT */
+.main-content{flex:1;padding:2rem;background:var(--cream);}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:900;color:var(--crimson-dark);margin-bottom:0.3rem;}
+.page-sub{font-size:0.85rem;color:var(--muted);margin-bottom:2rem;}
+
+/* CARDS */
+.card{background:var(--white);border-radius:12px;padding:1.6rem;box-shadow:0 2px 12px rgba(74,14,26,0.06);border:1px solid var(--cream-dark);}
+.card+.card{margin-top:1.2rem;}
+.card-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--crimson-dark);margin-bottom:1rem;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1.2rem;margin-bottom:1.5rem;}
+.stat-card{background:var(--white);border-radius:12px;padding:1.4rem;border:1px solid var(--cream-dark);box-shadow:0 2px 8px rgba(74,14,26,0.04);}
+.stat-num{font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--crimson-dark);}
+.stat-lbl{font-size:0.75rem;color:var(--muted);margin-top:0.2rem;letter-spacing:0.05em;}
+.stat-trend{font-size:0.72rem;margin-top:0.4rem;}
+.stat-trend.up{color:var(--green);}
+.stat-trend.down{color:var(--red);}
+
+/* TABLES */
+.table-wrap{overflow-x:auto;margin-top:1rem;}
+table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+th{text-align:left;padding:0.7rem 1rem;font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--cream-dark);background:var(--cream);}
+td{padding:0.8rem 1rem;border-bottom:1px solid var(--cream-dark);color:var(--dark);}
+tr:hover td{background:var(--cream);}
+.badge{display:inline-block;padding:0.2rem 0.7rem;border-radius:20px;font-size:0.7rem;font-weight:600;letter-spacing:0.05em;}
+.badge.green{background:rgba(45,122,79,0.1);color:var(--green);}
+.badge.amber{background:rgba(212,128,42,0.1);color:var(--amber);}
+.badge.red{background:rgba(192,57,43,0.1);color:var(--red);}
+.badge.blue{background:rgba(26,82,118,0.1);color:var(--blue);}
+
+/* BUTTONS */
+.btn{padding:0.55rem 1.2rem;border-radius:6px;font-size:0.82rem;font-weight:600;cursor:pointer;border:none;font-family:'DM Sans',sans-serif;transition:all 0.15s;letter-spacing:0.04em;}
+.btn-primary{background:var(--crimson-dark);color:var(--white);}
+.btn-primary:hover{background:var(--crimson);}
+.btn-amber{background:var(--amber);color:var(--dark);}
+.btn-amber:hover{background:var(--amber-light);}
+.btn-outline{background:none;border:1.5px solid var(--cream-dark);color:var(--dark);}
+.btn-outline:hover{border-color:var(--crimson-dark);}
+.btn-danger{background:var(--red);color:var(--white);}
+.btn-green{background:var(--green);color:var(--white);}
+.btn-sm{padding:0.35rem 0.8rem;font-size:0.75rem;}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;}
+
+/* UPLOAD ZONE */
+.upload-zone {border:2px dashed var(--cream-dark);border-radius:12px;padding:2.5rem;text-align:center;cursor:pointer;transition:all 0.2s;}
+.upload-zone:hover{border-color:var(--amber);background:rgba(212,128,42,0.03);}
+.upload-zone p{color:var(--muted);font-size:0.88rem;margin-top:0.5rem;}
+.upload-zone .icon{font-size:2.5rem;margin-bottom:0.5rem;}
+
+/* AI CHAT */
+.chat-container{display:flex;flex-direction:column;height:480px;}
+.chat-messages{flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.8rem;}
+.msg{max-width:82%;padding:0.85rem 1.1rem;border-radius:12px;font-size:0.88rem;line-height:1.65;}
+.msg.user{align-self:flex-end;background:var(--crimson-dark);color:var(--white);border-radius:12px 12px 4px 12px;}
+.msg.ai{align-self:flex-start;background:var(--cream-dark);color:var(--dark);border-radius:12px 12px 12px 4px;}
+.msg.ai .ai-label{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.3rem;}
+.msg.loading .dots{display:inline-flex;gap:4px;}
+.msg.loading .dots span{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:bounce 1.2s infinite;}
+.msg.loading .dots span:nth-child(2){animation-delay:0.2s;}
+.msg.loading .dots span:nth-child(3){animation-delay:0.4s;}
+.chat-input-row{display:flex;gap:0.6rem;padding-top:0.8rem;border-top:1px solid var(--cream-dark);}
+.chat-input{flex:1;padding:0.7rem 1rem;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:0.88rem;font-family:'DM Sans',sans-serif;resize:none;}
+.chat-input:focus{outline:none;border-color:var(--amber);}
+
+/* MED CARD DISPLAY */
+.med-card-display {width:340px;height:215px;border-radius:16px;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(74,14,26,0.3);background:linear-gradient(135deg,#6B1525 0%,#3A0A14 55%,#5A1020 100%);margin:0 auto;}
+.med-card-display .shine {position:absolute;inset:0;background:radial-gradient(ellipse at 70% 30%,rgba(212,128,42,0.18) 0%,transparent 60%);}
+.med-card-display .pattern {position:absolute;bottom:-30px;right:-30px;width:180px;height:180px;border-radius:50%;border:2px solid rgba(212,128,42,0.15);}
+.med-card-inner{position:relative;z-index:2;padding:1.4rem 1.6rem;height:100%;display:flex;flex-direction:column;justify-content:space-between;}
+.mci-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.mci-brand{font-family:'Playfair Display',serif;font-size:0.9rem;font-weight:900;color:var(--amber);}
+.mci-brand small{display:block;font-family:'DM Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(212,128,42,0.5);font-weight:400;margin-top:0.1rem;}
+.mci-type{font-family:'DM Mono',monospace;font-size:0.5rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(250,245,238,0.45);border:1px solid rgba(250,245,238,0.15);padding:0.2rem 0.5rem;border-radius:20px;}
+.mci-mid{display:flex;gap:1rem;align-items:flex-end;}
+.mci-info{}
+.mci-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--white);margin-bottom:0.15rem;}
+.mci-pid{font-family:'DM Mono',monospace;font-size:0.55rem;letter-spacing:0.12em;color:rgba(212,128,42,0.8);margin-bottom:0.4rem;}
+.mci-dets{display:flex;gap:0.8rem;}
+.mci-det-label{font-size:0.48rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(250,245,238,0.35);display:block;margin-bottom:0.08rem;}
+.mci-det-val{font-family:'DM Mono',monospace;font-size:0.65rem;color:rgba(250,245,238,0.85);}
+.mci-bot{display:flex;justify-content:space-between;align-items:flex-end;}
+.mci-num{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.2em;color:rgba(250,245,238,0.3);}
+.mci-chip{width:26px;height:20px;background:linear-gradient(135deg,var(--amber),var(--amber-light));border-radius:4px;}
+
+/* REPORT CARD */
+.report-card{background:var(--white);border-radius:10px;padding:1.2rem;border:1px solid var(--cream-dark);display:flex;gap:1rem;align-items:flex-start;transition:box-shadow 0.2s;}
+.report-card:hover{box-shadow:0 4px 20px rgba(74,14,26,0.1);}
+.report-icon{width:44px;height:44px;border-radius:10px;background:rgba(212,128,42,0.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+.report-info{flex:1;}
+.report-name{font-weight:600;font-size:0.92rem;color:var(--crimson-dark);margin-bottom:0.2rem;}
+.report-meta{font-size:0.75rem;color:var(--muted);}
+.report-actions{display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;}
+
+/* NOTIFICATIONS */
+.notif{padding:0.8rem 1rem;border-radius:8px;font-size:0.85rem;margin-bottom:0.6rem;display:flex;gap:0.6rem;align-items:flex-start;}
+.notif.info{background:rgba(26,82,118,0.08);border-left:3px solid var(--blue);}
+.notif.success{background:rgba(45,122,79,0.08);border-left:3px solid var(--green);}
+.notif.warn{background:rgba(212,128,42,0.08);border-left:3px solid var(--amber);}
+.notif.danger{background:rgba(192,57,43,0.08);border-left:3px solid var(--red);}
+
+/* HEALTH METRICS */
+.metric-row{display:flex;align-items:center;gap:0.8rem;padding:0.7rem 0;border-bottom:1px solid var(--cream-dark);}
+.metric-row:last-child{border-bottom:none;}
+.metric-name{flex:1;font-size:0.85rem;color:var(--dark);}
+.metric-bar-wrap{flex:2;background:var(--cream-dark);border-radius:20px;height:8px;overflow:hidden;}
+.metric-bar{height:100%;border-radius:20px;background:var(--crimson-dark);transition:width 1s ease;}
+.metric-bar.warn{background:var(--amber);}
+.metric-bar.ok{background:var(--green);}
+.metric-bar.danger{background:var(--red);}
+.metric-val{font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--dark);width:60px;text-align:right;}
+
+/* TIMELINE */
+.timeline{position:relative;padding-left:1.5rem;}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1.5px;background:var(--cream-dark);}
+.tl-item{position:relative;margin-bottom:1.2rem;}
+.tl-dot{position:absolute;left:-1.5rem;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid var(--amber);background:var(--white);}
+.tl-date{font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.2rem;}
+.tl-title{font-size:0.88rem;font-weight:600;color:var(--crimson-dark);margin-bottom:0.15rem;}
+.tl-desc{font-size:0.8rem;color:var(--muted);}
+
+/* APPOINTMENT */
+.appt-card{background:var(--white);border-radius:10px;padding:1.1rem 1.3rem;border:1px solid var(--cream-dark);display:flex;gap:1rem;align-items:center;margin-bottom:0.8rem;}
+.appt-date{text-align:center;min-width:48px;}
+.appt-day{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--crimson-dark);line-height:1;}
+.appt-mon{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
+.appt-divider{width:1.5px;height:40px;background:var(--cream-dark);}
+.appt-info{flex:1;}
+.appt-title{font-weight:600;font-size:0.88rem;color:var(--crimson-dark);}
+.appt-doctor{font-size:0.78rem;color:var(--muted);margin-top:0.15rem;}
+
+/* RISK GAUGE */
+.risk-gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:1rem 0;}
+.risk-label{font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.5rem;}
+.risk-score{font-family:'Playfair Display',serif;font-size:3.5rem;font-weight:900;line-height:1;}
+.risk-bar{width:100%;height:14px;border-radius:20px;background:linear-gradient(to right,var(--green),var(--amber),var(--red));position:relative;margin:1rem 0 0.5rem;}
+.risk-indicator{position:absolute;top:-4px;width:22px;height:22px;border-radius:50%;background:var(--white);border:3px solid var(--crimson-dark);transform:translateX(-50%);transition:left 1s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+.risk-ticks{display:flex;justify-content:space-between;font-size:0.65rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.risk-factor-list{margin-top:1rem;}
+.risk-factor{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--cream-dark);font-size:0.83rem;}
+.risk-factor:last-child{border-bottom:none;}
+.risk-factor .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.95);}to{opacity:1;transform:scale(1);}}
+@keyframes bounce{0%,80%,100%{transform:translateY(0);}40%{transform:translateY(-8px);}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(212,128,42,0.3);}50%{box-shadow:0 0 0 8px rgba(212,128,42,0);}}
+
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;}
+
+/* FORM GRID */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+
+/* MISC */
+.empty-state{text-align:center;padding:3rem;color:var(--muted);}
+.empty-state .icon{font-size:3rem;margin-bottom:0.8rem;}
+.empty-state h3{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--crimson-dark);margin-bottom:0.4rem;}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem;}
+.divider{height:1px;background:var(--cream-dark);margin:1.5rem 0;}
+.quick-btns{display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.3rem;}
+.quick-btns .btn{font-size:0.75rem;padding:0.4rem 0.85rem;border-color:var(--cream-dark);color:var(--dark);transition:all 0.15s;}
+.quick-btns .btn:hover{border-color:var(--amber);background:rgba(212,128,42,0.06);color:var(--crimson-dark);transform:translateY(-1px);}
+
+/* AI Analysis Result box */
+.ai-result-box{background:var(--white);border-radius:12px;padding:1.4rem;border:1px solid var(--cream-dark);border-left:4px solid var(--amber);margin-top:1rem;}
+.ai-result-box.success{border-left-color:var(--green);}
+.ai-result-box.danger{border-left-color:var(--red);}
+.ai-result-header{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;}
+.ai-result-header .ai-tag{font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;background:rgba(212,128,42,0.1);color:var(--amber);padding:0.2rem 0.6rem;border-radius:20px;}
+.ai-result-content{font-size:0.88rem;line-height:1.75;color:var(--dark);white-space:pre-wrap;}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .app-nav{padding:0.8rem 1rem;}
+  .main-content{padding:1rem;}
+  .grid-2,.grid-3,.form-grid{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .med-card-display{width:100%;height:auto;min-height:200px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LANDING PAGE ========== -->
+<div id="landing">
+  <div class="grid-bg"></div>
+  <div class="land-logo">Med<span>Card</span> AI</div>
+  <div class="land-sub">Silver Oak University · Project Fair 2026</div>
+  <h1 class="land-title">AI Integrated<br><span class="accent">Medical E-Card</span></h1>
+  <p class="land-desc">One secure, intelligent platform for all medical records. Instant QR access, AI-powered health insights, and seamless care coordination.</p>
+  <div class="ai-pills">
+    <span class="ai-pill">🔬 Analyze Medical Reports</span>
+    <span class="ai-pill">💡 Health Insights</span>
+    <span class="ai-pill">⚠️ Risk Prediction</span>
+    <span class="ai-pill">💬 Patient Chatbot</span>
+  </div>
+  <div class="land-portals">
+    <button class="portal-btn patient" onclick="openAuth('patient')">🏥 Patient Portal</button>
+    <button class="portal-btn doctor" onclick="openAuth('doctor')">👨‍⚕️ Doctor Portal</button>
+    <button class="portal-btn admin" onclick="openAuth('admin')">⚙️ Superadmin</button>
+  </div>
+  <div class="land-stats">
+    <div><div class="ls-val">75%</div><div class="ls-lbl">Lost records solved</div></div>
+    <div><div class="ls-val">30%</div><div class="ls-lbl">Efficiency boost</div></div>
+    <div><div class="ls-val">4</div><div class="ls-lbl">AI capabilities</div></div>
+    <div><div class="ls-val">AI</div><div class="ls-lbl">Powered insights</div></div>
+  </div>
+</div>
+
+<!-- ========== AUTH OVERLAY ========== -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-title" id="auth-title">Patient Login</div>
+    <div class="auth-role-badge" id="auth-role-badge">Patient Portal</div>
+    <div id="auth-login-form">
+      <div class="demo-creds">
+        <strong>Demo credentials:</strong><br>
+        Patient — ID: <strong>2507070000057</strong> or <strong>2507070000080</strong><br>
+        OTP: <strong>123456</strong> (all portals)
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="auth-name" placeholder="e.g. Riya Jain" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Patient ID / Email</label>
+        <input class="form-input" id="auth-id" placeholder="e.g. 2507070000057" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">OTP (demo: use 123456)</label>
+        <input class="form-input" id="auth-otp" placeholder="6-digit OTP" maxlength="6" />
+        <div class="otp-hint">📱 In production, OTP is sent to your registered mobile number.</div>
+      </div>
+      <button class="btn-submit" id="auth-submit-btn" onclick="doLogin()">Login Securely</button>
+      <div class="auth-switch" id="auth-switch">New patient? <a onclick="toggleRegister()">Register here</a></div>
+    </div>
+    <div id="auth-register-form" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-input" id="reg-fname" placeholder="First name" /></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" id="reg-lname" placeholder="Last name" /></div>
+      </div>
+      <div class="form-group"><label class="form-label">Date of Birth</label><input class="form-input" id="reg-dob" type="date" /></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Blood Type</label>
+          <select class="form-input" id="reg-blood"><option>O+</option><option>O-</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="reg-phone" placeholder="+91 98765 00000" /></div>
+      </div>
+      <button class="btn-submit" onclick="doRegister()">Create Account</button>
+      <div class="auth-switch">Already registered? <a onclick="toggleRegister()">Login here</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APP SHELL ========== -->
+<div id="app">
+  <nav class="app-nav">
+    <div class="app-logo">Med<span>Card</span> AI</div>
+    <div class="nav-user">
+      <div>
+        <div class="nav-user-name" id="nav-name">—</div>
+        <div class="nav-role" id="nav-role">—</div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <div class="app-body">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content" id="main-content"></main>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentUser = null;
+let currentRole = null;
+let chatHistory = [];
+
+const DB = {
+  patients: [
+    { id:'2507070000057', name:'Riya Jain', dob:'1999-03-15', blood:'O+', phone:'+91 98765 00057', allergies:'None', conditions:['Hypertension'], reports:[
+      {id:'R001', name:'Blood Count Report', date:'2026-03-10', type:'Lab', status:'Normal', notes:'Hemoglobin 13.2 g/dL, WBC normal range'},
+      {id:'R002', name:'ECG Report', date:'2026-02-18', type:'Cardiac', status:'Normal', notes:'Sinus rhythm, no abnormalities detected'},
+      {id:'R003', name:'Chest X-Ray', date:'2026-01-22', type:'Radiology', status:'Review', notes:'Mild consolidation in right lower lobe'},
+    ], appointments:[
+      {id:'A001', date:'2026-04-05', month:'APR', day:'05', doctor:'Dr. Mehta', specialty:'Cardiology', status:'Upcoming'},
+      {id:'A002', date:'2026-04-15', month:'APR', day:'15', doctor:'Dr. Shah', specialty:'General', status:'Upcoming'},
+    ]},
+    { id:'2507070000080', name:'Diya Jain', dob:'2001-07-22', blood:'A+', phone:'+91 98765 00080', allergies:'Penicillin', conditions:['Asthma','Allergies'], reports:[
+      {id:'R004', name:'Spirometry Test', date:'2026-03-01', type:'Pulmonology', status:'Abnormal', notes:'FEV1 reduced to 72%, mild obstruction'},
+      {id:'R005', name:'Allergy Panel', date:'2026-02-10', type:'Allergy', status:'Normal', notes:'Positive for dust mites and pollen'},
+    ], appointments:[
+      {id:'A003', date:'2026-04-08', month:'APR', day:'08', doctor:'Dr. Rao', specialty:'Pulmonology', status:'Upcoming'},
+    ]},
+  ],
+  doctors: [
+    { id:'DR001', name:'Dr. Priya Mehta', specialty:'Cardiology', phone:'+91 98000 11001' },
+    { id:'DR002', name:'Dr. Amit Shah', specialty:'General Medicine', phone:'+91 98000 11002' },
+  ],
+  policies: [
+    { id:'P001', title:'HIPAA Compliance Update 2026', date:'2026-03-01', status:'Active' },
+    { id:'P002', title:'Telemedicine Service Guidelines', date:'2026-02-15', status:'Active' },
+    { id:'P003', title:'Emergency Data Access Protocol', date:'2026-01-10', status:'Under Review' },
+  ]
+};
+
+// ============================================================
+// AUTH
+// ============================================================
+function openAuth(role) {
+  currentRole = role;
+  document.getElementById('auth-overlay').classList.add('show');
+  const titles = { patient:'Patient Login', doctor:'Doctor Login', admin:'Superadmin Login' };
+  const badges = { patient:'Patient Portal', doctor:'Doctor Portal', admin:'Superadmin Portal' };
+  document.getElementById('auth-title').textContent = titles[role];
+  document.getElementById('auth-role-badge').textContent = badges[role];
+  document.getElementById('auth-switch').style.display = role==='patient' ? 'block' : 'none';
+}
+function closeAuth() { document.getElementById('auth-overlay').classList.remove('show'); }
+function toggleRegister() {
+  const lf = document.getElementById('auth-login-form');
+  const rf = document.getElementById('auth-register-form');
+  lf.style.display = lf.style.display==='none' ? 'block' : 'none';
+  rf.style.display = rf.style.display==='none' ? 'block' : 'none';
+}
+function doRegister() {
+  const fname = document.getElementById('reg-fname').value.trim();
+  const lname = document.getElementById('reg-lname').value.trim();
+  const dob = document.getElementById('reg-dob').value;
+  const blood = document.getElementById('reg-blood').value;
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!fname || !lname || !dob) { alert('Please fill required fields.'); return; }
+  const newId = '25070700000' + Math.floor(Math.random()*900+100);
+  const newPt = { id:newId, name:fname+' '+lname, dob, blood, phone, allergies:'None', conditions:[], reports:[], appointments:[] };
+  DB.patients.push(newPt);
+  currentUser = newPt;
+  currentRole = 'patient';
+  bootApp();
+}
+function doLogin() {
+  const btn = document.getElementById('auth-submit-btn');
+  const otp = document.getElementById('auth-otp').value.trim();
+  if (otp !== '123456') { alert('Invalid OTP. Use demo OTP: 123456'); return; }
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.innerHTML = 'Login Securely'; btn.disabled = false;
+    if (currentRole === 'patient') {
+      const pid = document.getElementById('auth-id').value.trim();
+      const pt = DB.patients.find(p => p.id===pid || p.name.toLowerCase().includes(pid.toLowerCase()));
+      currentUser = pt || { id:'GUEST001', name:document.getElementById('auth-name').value||'Guest Patient', dob:'2000-01-01', blood:'—', phone:'—', allergies:'None', conditions:[], reports:[], appointments:[] };
+    } else if (currentRole === 'doctor') {
+      currentUser = { name:document.getElementById('auth-name').value||'Dr. Guest', id:'DR999', specialty:'General' };
+    } else {
+      currentUser = { name:'Super Admin', id:'SA001' };
+    }
+    bootApp();
+  }, 1200);
+}
+function logout() {
+  document.getElementById('app').style.display='none';
+  document.getElementById('landing').style.display='flex';
+  currentUser=null; currentRole=null; chatHistory=[];
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+function bootApp() {
+  closeAuth();
+  document.getElementById('landing').style.display='none';
+  document.getElementById('app').style.display='block';
+  document.getElementById('nav-name').textContent = currentUser.name;
+  const roleLabels = { patient:'Patient', doctor:'Doctor', admin:'Superadmin' };
+  document.getElementById('nav-role').textContent = roleLabels[currentRole]||'User';
+  buildSidebar();
+  navigateTo(currentRole==='patient'?'dashboard':currentRole==='doctor'?'doc-dashboard':'admin-dashboard');
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const menus = {
+    patient: [
+      { label:'Overview', items:[
+        { icon:'🏠', label:'Dashboard', page:'dashboard' },
+        { icon:'📋', label:'My Reports', page:'reports' },
+        { icon:'💳', label:'My E-Card', page:'ecard' },
+        { icon:'💬', label:'AI Health Assistant', page:'ai-chat' },
+      ]},
+      { label:'Health', items:[
+        { icon:'⚠️', label:'Risk Predictor', page:'risk' },
+        { icon:'📅', label:'Appointments', page:'appointments' },
+        { icon:'📊', label:'Health Metrics', page:'metrics' },
+        { icon:'📜', label:'Health Policies', page:'policies' },
+      ]},
+    ],
+    doctor: [
+      { label:'Overview', items:[
+        { icon:'🏠', label:'Dashboard', page:'doc-dashboard' },
+        { icon:'👥', label:'Patients', page:'doc-patients' },
+        { icon:'📅', label:'Appointments', page:'doc-appointments' },
+        { icon:'🤖', label:'AI Analysis Tool', page:'doc-ai' },
+      ]},
+      { label:'Management', items:[
+        { icon:'📊', label:'Analytics', page:'doc-analytics' },
+        { icon:'📝', label:'Add Report', page:'doc-add-report' },
+      ]},
+    ],
+    admin: [
+      { label:'System', items:[
+        { icon:'🏠', label:'Dashboard', page:'admin-dashboard' },
+        { icon:'👥', label:'All Users', page:'admin-users' },
+        { icon:'📜', label:'Policies', page:'admin-policies' },
+        { icon:'📊', label:'Analytics', page:'admin-analytics' },
+      ]},
+    ],
+  };
+  const roleMenu = menus[currentRole]||[];
+  sidebar.innerHTML = roleMenu.map(section => `
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">${section.label}</div>
+      ${section.items.map(item => `
+        <div class="sidebar-item" id="nav-${item.page}" onclick="navigateTo('${item.page}')">
+          <span class="icon">${item.icon}</span>${item.label}
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function navigateTo(page) {
+  document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
+  const nav = document.getElementById('nav-'+page);
+  if (nav) nav.classList.add('active');
+  renderPage(page);
+}
+
+// ============================================================
+// PAGE RENDERER
+// ============================================================
+function renderPage(page) {
+  const main = document.getElementById('main-content');
+  const renderers = {
+    'dashboard': renderPatientDashboard,
+    'reports': renderReports,
+    'ecard': renderECard,
+    'ai-chat': renderAIChat,
+    'risk': renderRiskPredictor,
+    'appointments': renderAppointments,
+    'metrics': renderMetrics,
+    'policies': renderPolicies,
+    'doc-dashboard': renderDoctorDashboard,
+    'doc-patients': renderDoctorPatients,
+    'doc-appointments': renderDoctorAppointments,
+    'doc-ai': renderDoctorAI,
+    'doc-analytics': renderDoctorAnalytics,
+    'doc-add-report': renderAddReport,
+    'admin-dashboard': renderAdminDashboard,
+    'admin-users': renderAdminUsers,
+    'admin-policies': renderAdminPolicies,
+    'admin-analytics': renderAdminAnalytics,
+  };
+  main.innerHTML='';
+  if (renderers[page]) renderers[page](main);
+  else main.innerHTML='<div class="empty-state"><div class="icon">🚧</div><h3>Coming Soon</h3></div>';
+}
+
+// ============================================================
+// PATIENT PAGES
+// ============================================================
+function renderPatientDashboard(main) {
+  const pt = currentUser;
+  const reports = pt.reports||[];
+  const appts = pt.appointments||[];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Welcome back, ${pt.name.split(' ')[0]} 👋</div>
+      <div class="page-sub">Here's your health overview at a glance.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">${reports.length}</div><div class="stat-lbl">Total Reports</div></div>
+        <div class="stat-card"><div class="stat-num">${appts.length}</div><div class="stat-lbl">Upcoming Visits</div></div>
+        <div class="stat-card"><div class="stat-num">${pt.blood||'—'}</div><div class="stat-lbl">Blood Type</div></div>
+        <div class="stat-card"><div class="stat-num">${(pt.conditions||[]).length||0}</div><div class="stat-lbl">Known Conditions</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Recent Reports</div>
+          ${reports.slice(0,3).map(r => `
+            <div class="report-card" style="margin-bottom:0.7rem;">
+              <div class="report-icon">${r.type==='Lab'?'🧪':r.type==='Cardiac'?'❤️':r.type==='Radiology'?'🩻':'📄'}</div>
+              <div class="report-info">
+                <div class="report-name">${r.name}</div>
+                <div class="report-meta">${r.date} · <span class="badge ${r.status==='Normal'?'green':r.status==='Abnormal'?'red':'amber'}">${r.status}</span></div>
+              </div>
+            </div>
+          `).join('')||'<div class="empty-state" style="padding:1rem;"><p>No reports yet.</p></div>'}
+          <button class="btn btn-outline" style="margin-top:0.8rem;width:100%;" onclick="navigateTo('reports')">View All Reports →</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Upcoming Appointments</div>
+          ${appts.map(a => `
+            <div class="appt-card">
+              <div class="appt-date"><div class="appt-day">${a.day}</div><div class="appt-mon">${a.month}</div></div>
+              <div class="appt-divider"></div>
+              <div class="appt-info"><div class="appt-title">${a.specialty}</div><div class="appt-doctor">${a.doctor}</div></div>
+              <span class="badge blue">${a.status}</span>
+            </div>
+          `).join('')||'<div class="empty-state" style="padding:1rem;"><p>No upcoming appointments.</p></div>'}
+        </div>
+      </div>
+      <div class="card" style="margin-top:1.2rem;">
+        <div class="card-title">🤖 AI Capabilities Available to You</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:0.5rem;">
+          <div style="padding:1rem;border-radius:10px;background:rgba(212,128,42,0.06);border:1px solid rgba(212,128,42,0.15);cursor:pointer;" onclick="navigateTo('reports')">
+            <div style="font-size:1.5rem;margin-bottom:0.4rem;">🔬</div>
+            <div style="font-weight:600;font-size:0.88rem;color:var(--crimson-dark);">Analyze Reports</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">AI reads your medical files</div>
+          </div>
+          <div style="padding:1rem;border-radius:10px;background:rgba(45,122,79,0.06);border:1px solid rgba(45,122,79,0.15);cursor:pointer;" onclick="navigateTo('ai-chat')">
+            <div style="font-size:1.5rem;margin-bottom:0.4rem;">💬</div>
+            <div style="font-weight:600;font-size:0.88rem;color:var(--crimson-dark);">Health Chatbot</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Ask any health question</div>
+          </div>
+          <div style="padding:1rem;border-radius:10px;background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.15);cursor:pointer;" onclick="navigateTo('risk')">
+            <div style="font-size:1.5rem;margin-bottom:0.4rem;">⚠️</div>
+            <div style="font-weight:600;font-size:0.88rem;color:var(--crimson-dark);">Risk Predictor</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">AI predicts health risks</div>
+          </div>
+          <div style="padding:1rem;border-radius:10px;background:rgba(26,82,118,0.06);border:1px solid rgba(26,82,118,0.15);cursor:pointer;" onclick="navigateTo('metrics')">
+            <div style="font-size:1.5rem;margin-bottom:0.4rem;">📊</div>
+            <div style="font-weight:600;font-size:0.88rem;color:var(--crimson-dark);">Health Insights</div>
+            <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">AI recommendations</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// TASK 1: ANALYZE MEDICAL REPORTS
+// ============================================================
+function renderReports(main) {
+  const pt = currentUser;
+  const reports = pt.reports||[];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="section-head">
+        <div><div class="page-title">My Medical Reports</div><div class="page-sub">All your reports in one secure place. AI analysis powered by Claude.</div></div>
+        <button class="btn btn-amber" onclick="triggerUpload()">+ Upload Report</button>
+      </div>
+      <input type="file" id="file-upload" accept=".pdf,.jpg,.png" style="display:none" onchange="handleFileUpload(event)" />
+      <div class="upload-zone" onclick="triggerUpload()">
+        <div class="icon">📂</div>
+        <strong>Drop or click to upload a report</strong>
+        <p>Supports PDF, JPG, PNG — AI will analyze it automatically</p>
+      </div>
+      <div style="margin-top:1.5rem;">
+        ${reports.length ? reports.map(r => `
+          <div class="report-card" style="margin-bottom:0.8rem;">
+            <div class="report-icon">${r.type==='Lab'?'🧪':r.type==='Cardiac'?'❤️':r.type==='Radiology'?'🩻':r.type==='Pulmonology'?'🫁':r.type==='Allergy'?'🌿':'📄'}</div>
+            <div class="report-info">
+              <div class="report-name">${r.name}</div>
+              <div class="report-meta">${r.date} · ${r.type} · <span class="badge ${r.status==='Normal'?'green':r.status==='Abnormal'?'red':'amber'}">${r.status}</span></div>
+              <div style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;">${r.notes}</div>
+            </div>
+            <div class="report-actions">
+              <button class="btn btn-sm btn-amber" onclick="analyzeReport('${r.id}')">🤖 AI Analyze</button>
+              <button class="btn btn-sm btn-outline">⬇ Download</button>
+            </div>
+          </div>
+        `).join('') : `<div class="empty-state"><div class="icon">📋</div><h3>No Reports Yet</h3><p>Upload your first medical report above.</p></div>`}
+      </div>
+      <div id="ai-analysis-result"></div>
+    </div>`;
+}
+
+function triggerUpload() { document.getElementById('file-upload').click(); }
+
+function handleFileUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const newReport = { id:'R'+Date.now(), name:file.name.replace(/\.[^.]+$/,''), date:new Date().toISOString().slice(0,10), type:'Lab', status:'Pending', notes:'Uploaded — AI analysis pending' };
+  if (!currentUser.reports) currentUser.reports=[];
+  currentUser.reports.unshift(newReport);
+  renderPage('reports');
+  setTimeout(()=>analyzeReport(newReport.id), 500);
+}
+
+async function analyzeReport(reportId) {
+  const r = currentUser.reports.find(r=>r.id===reportId);
+  if (!r) return;
+  const result = document.getElementById('ai-analysis-result');
+  if (result) {
+    result.innerHTML = `<div class="ai-result-box">
+      <div class="ai-result-header"><span style="font-size:1.2rem;">🤖</span><span class="ai-tag">Analyzing</span><span style="font-size:0.88rem;font-weight:600;color:var(--crimson-dark);">${r.name}</span></div>
+      <div class="msg loading"><div class="dots"><span></span><span></span><span></span></div></div>
+    </div>`;
+    result.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  const prompt = `You are MedCard AI, an intelligent medical records assistant. Analyze this medical report: "${r.name}" (Type: ${r.type}, Status: ${r.status}, Notes: ${r.notes}). Patient: ${currentUser.name}, Blood type: ${currentUser.blood}, Conditions: ${(currentUser.conditions||[]).join(', ')||'None'}, Allergies: ${currentUser.allergies||'None'}. Provide a structured analysis with these sections:
+
+📋 SUMMARY
+(2-3 sentences explaining what this report shows in plain language)
+
+🔍 KEY FINDINGS
+• (bullet points of important values/observations)
+
+⚠️ CONCERNS
+• (anything that needs attention, or "None identified" if all normal)
+
+✅ RECOMMENDATIONS
+• (2-3 actionable next steps the patient should take)
+
+Keep it clear, warm, and patient-friendly. Do not diagnose — recommend consulting their doctor for final decisions.`;
+  try {
+    const res = await callClaudeAPI(prompt);
+    if (result) {
+      result.innerHTML = `<div class="ai-result-box success">
+        <div class="ai-result-header"><span style="font-size:1.2rem;">🤖</span><span class="ai-tag" style="background:rgba(45,122,79,0.1);color:var(--green);">Analysis Complete</span><span style="font-size:0.88rem;font-weight:600;color:var(--crimson-dark);">${r.name}</span></div>
+        <div class="ai-result-content">${res}</div>
+      </div>`;
+    }
+  } catch(e) {
+    if (result) result.innerHTML=`<div class="notif warn" style="margin-top:1rem;">⚠️ AI analysis unavailable. Please try again.</div>`;
+  }
+}
+
+// ============================================================
+// TASK 2: HEALTH INSIGHTS & RECOMMENDATIONS (AI Chat)
+// ============================================================
+function renderAIChat(main) {
+  chatHistory=[];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">💬 AI Health Assistant</div>
+      <div class="page-sub">Powered by Claude AI — get personalized health insights, recommendations, and answers.</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,var(--crimson-dark),var(--crimson));padding:1rem 1.5rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(212,128,42,0.3);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🤖</div>
+          <div style="flex:1;min-width:150px;">
+            <div style="font-weight:700;font-size:0.92rem;color:var(--white);">MedCard AI Assistant</div>
+            <div id="chat-status-label" style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:rgba(212,128,42,0.8);">${MEDCARD_API_KEY ? 'LIVE AI MODE · ONLINE' : 'OFFLINE MODE · ADD API KEY FOR LIVE AI'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0;">
+            <input id="api-key-input" type="password" placeholder="sk-ant-... API key (optional)" value="${MEDCARD_API_KEY}"
+              style="padding:0.35rem 0.7rem;border-radius:6px;border:1.5px solid rgba(212,128,42,0.4);background:rgba(0,0,0,0.25);color:var(--white);font-size:0.72rem;font-family:'DM Mono',monospace;width:200px;outline:none;"
+              oninput="MEDCARD_API_KEY=this.value;localStorage.setItem('medcard_api_key',this.value);document.getElementById('chat-status-label').textContent=this.value?'LIVE AI MODE · ONLINE':'OFFLINE MODE · ADD API KEY FOR LIVE AI';" />
+            <button onclick="MEDCARD_API_KEY=document.getElementById('api-key-input').value;localStorage.setItem('medcard_api_key',MEDCARD_API_KEY);document.getElementById('chat-status-label').textContent=MEDCARD_API_KEY?'LIVE AI MODE · ONLINE':'OFFLINE MODE · ADD API KEY FOR LIVE AI';"
+              style="padding:0.35rem 0.7rem;border-radius:6px;border:none;background:var(--amber);color:var(--dark);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+          </div>
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-msgs">
+            <div class="msg ai">
+              <div class="ai-label">MedCard AI</div>
+              Hello ${currentUser.name.split(' ')[0]}! 👋 I'm your AI health assistant. I have access to your full medical profile including your reports, conditions, and history.<br><br>
+              I can help you with:<br>
+              • Understanding your medical reports<br>
+              • Personalized health recommendations<br>
+              • Medication guidance (always consult your doctor)<br>
+              • Symptom information<br>
+              • Appointment planning<br><br>
+              What would you like to know today?
+            </div>
+          </div>
+          <div style="padding:0 1rem 1rem;" class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask about your health, medications, or reports..." onkeydown="handleChatKey(event,'sendChat')"></textarea>
+            <button class="btn btn-primary" onclick="sendChat()">Send</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:1.2rem;">
+        <div style="font-size:0.75rem;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.8rem;">💡 Tap a question to get an instant answer:</div>
+
+        <div style="margin-bottom:0.6rem;">
+          <div style="font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">📋 My Reports & History</div>
+          <div class="quick-btns">
+            ${[
+              'What do my recent medical reports say?',
+              'Are any of my reports flagged as abnormal?',
+              'Give me a summary of my complete health history.'
+            ].map(q => `<button class="btn btn-outline btn-sm" onclick="quickAsk('${q.replace(/'/g,"\\'")}')">📄 ${q}</button>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-bottom:0.6rem;">
+          <div style="font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">❤️ Health & Risks</div>
+          <div class="quick-btns">
+            ${[
+              'Do I have any health risks based on my history?',
+              'What symptoms should I watch out for with my conditions?',
+              'Am I at risk for any serious diseases?',
+              'How serious are my current medical conditions?'
+            ].map(q => `<button class="btn btn-outline btn-sm" onclick="quickAsk('${q.replace(/'/g,"\\'")}')">❤️ ${q}</button>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-bottom:0.6rem;">
+          <div style="font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">💊 Medications & Allergies</div>
+          <div class="quick-btns">
+            ${[
+              'What medications should I avoid given my conditions?',
+              'Are there any drug interactions I should know about?',
+              'What over-the-counter medicines are safe for me?'
+            ].map(q => `<button class="btn btn-outline btn-sm" onclick="quickAsk('${q.replace(/'/g,"\\'")}')">💊 ${q}</button>`).join('')}
+          </div>
+        </div>
+
+        <div style="margin-bottom:0.6rem;">
+          <div style="font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">🥗 Lifestyle & Diet</div>
+          <div class="quick-btns">
+            ${[
+              'Give me a diet plan suitable for my conditions.',
+              'What exercises are safe and beneficial for me?',
+              'What lifestyle changes should I make to improve my health?'
+            ].map(q => `<button class="btn btn-outline btn-sm" onclick="quickAsk('${q.replace(/'/g,"\\'")}')">🥗 ${q}</button>`).join('')}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:0.68rem;font-family:'DM Mono',monospace;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.4rem;">📅 Appointments & Next Steps</div>
+          <div class="quick-btns">
+            ${[
+              'When is my next appointment and what should I prepare?',
+              'Which specialist doctor should I visit next?',
+              'What health checkups should I get done soon?'
+            ].map(q => `<button class="btn btn-outline btn-sm" onclick="quickAsk('${q.replace(/'/g,"\\'")}')">📅 ${q}</button>`).join('')}
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+}
+
+function handleChatKey(e, fn) { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); window[fn](); } }
+function quickAsk(q) { document.getElementById('chat-input').value=q; sendChat(); }
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msgs = document.getElementById('chat-msgs');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value='';
+  msgs.innerHTML += `<div class="msg user">${text}</div>`;
+  const loadId='load-'+Date.now();
+  msgs.innerHTML += `<div class="msg loading" id="${loadId}"><div class="ai-label">MedCard AI</div><div class="dots"><span></span><span></span><span></span></div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  chatHistory.push({role:'user',content:text});
+
+  const systemPrompt = `You are MedCard AI, an intelligent and empathetic medical assistant for the AI Integrated Medical E-Card platform. You are speaking with patient ${currentUser.name}. Their profile:
+- Blood type: ${currentUser.blood}
+- Date of Birth: ${currentUser.dob}
+- Allergies: ${currentUser.allergies||'None'}
+- Known conditions: ${(currentUser.conditions||[]).join(', ')||'None'}
+- Medical reports: ${(currentUser.reports||[]).map(r=>`${r.name} (${r.date}, ${r.type}, Status: ${r.status}: ${r.notes})`).join('; ')||'None on file'}
+- Upcoming appointments: ${(currentUser.appointments||[]).map(a=>`${a.specialty} with ${a.doctor} on ${a.day} ${a.month}`).join('; ')||'None scheduled'}
+
+TASK: Provide personalized health insights and recommendations. Be warm, empathetic, and use plain language. Give specific, actionable advice tailored to this patient's actual medical history. Format responses clearly. Always remind patient to consult their doctor for final medical decisions. Keep responses focused and under 250 words unless the question requires more detail.`;
+
+  try {
+    const res = await callClaudeAPI(text, systemPrompt, chatHistory.slice(-10));
+    chatHistory.push({role:'assistant',content:res});
+    document.getElementById(loadId).outerHTML = `<div class="msg ai"><div class="ai-label">MedCard AI ✨</div>${res.replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    // Use smart offline fallback based on patient profile
+    const fallback = getOfflineFallback(text);
+    chatHistory.push({role:'assistant',content:fallback});
+    const isNoKey = e.message === 'NO_API_KEY';
+    const modeNote = isNoKey
+      ? `<div style="margin-top:0.6rem;padding:0.5rem 0.7rem;background:rgba(212,128,42,0.08);border-radius:6px;font-size:0.72rem;color:var(--amber);font-family:'DM Mono',monospace;">📴 OFFLINE MODE — Add API key for live AI responses</div>`
+      : `<div style="margin-top:0.6rem;padding:0.5rem 0.7rem;background:rgba(212,128,42,0.08);border-radius:6px;font-size:0.72rem;color:var(--amber);font-family:'DM Mono',monospace;">📴 OFFLINE MODE — Could not reach AI server</div>`;
+    document.getElementById(loadId).outerHTML = `<div class="msg ai"><div class="ai-label">MedCard AI 📴</div>${fallback}${modeNote}</div>`;
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ============================================================
+// TASK 3: PREDICT HEALTH RISKS FROM HISTORY
+// ============================================================
+function renderRiskPredictor(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">⚠️ AI Health Risk Predictor</div>
+      <div class="page-sub">Claude AI analyzes your complete medical history to identify and predict potential health risks.</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Your Health Profile Summary</div>
+          <div class="metric-row"><div class="metric-name">Blood Type</div><span class="badge red">${currentUser.blood||'—'}</span></div>
+          <div class="metric-row"><div class="metric-name">Known Conditions</div><div style="font-size:0.85rem;">${(currentUser.conditions||[]).map(c=>`<span class="badge amber" style="margin:0.1rem;">${c}</span>`).join('')||'<span style="color:var(--muted);">None recorded</span>'}</div></div>
+          <div class="metric-row"><div class="metric-name">Allergies</div><div style="font-size:0.85rem;">${currentUser.allergies||'None'}</div></div>
+          <div class="metric-row"><div class="metric-name">Reports Filed</div><div style="font-size:0.85rem;font-family:'DM Mono',monospace;">${(currentUser.reports||[]).length} report(s)</div></div>
+          <div class="metric-row"><div class="metric-name">Abnormal Reports</div><div style="font-size:0.85rem;">${(currentUser.reports||[]).filter(r=>r.status==='Abnormal'||r.status==='Review').length} flagged</div></div>
+          <div style="margin-top:1.5rem;">
+            <button class="btn btn-primary" style="width:100%;" onclick="runRiskPrediction()">🤖 Run AI Risk Analysis</button>
+          </div>
+        </div>
+        <div class="card" id="risk-result-card">
+          <div class="card-title">Risk Assessment</div>
+          <div class="empty-state" style="padding:2rem;">
+            <div class="icon">🔍</div>
+            <h3>Ready to Analyze</h3>
+            <p>Click "Run AI Risk Analysis" to get your personalized health risk prediction based on your medical history.</p>
+          </div>
+        </div>
+      </div>
+      <div id="risk-detail-section"></div>
+    </div>`;
+}
+
+async function runRiskPrediction() {
+  const card = document.getElementById('risk-result-card');
+  card.innerHTML = `<div class="card-title">Risk Assessment</div>
+    <div style="text-align:center;padding:2rem;">
+      <div style="font-size:2rem;margin-bottom:1rem;">🤖</div>
+      <div style="font-weight:600;margin-bottom:0.5rem;">Analyzing your medical history...</div>
+      <div class="msg loading" style="display:inline-block;"><div class="dots"><span></span><span></span><span></span></div></div>
+    </div>`;
+
+  const pt = currentUser;
+  const prompt = `You are MedCard AI performing a health risk prediction analysis. Analyze this patient's complete medical history and predict health risks.
+
+Patient Profile:
+- Name: ${pt.name}
+- DOB: ${pt.dob}
+- Blood Type: ${pt.blood}
+- Allergies: ${pt.allergies||'None'}
+- Known Conditions: ${(pt.conditions||[]).join(', ')||'None'}
+- Medical Reports: ${(pt.reports||[]).map(r=>`${r.name} (${r.date}, Type: ${r.type}, Status: ${r.status}, Notes: ${r.notes})`).join('; ')||'None on file'}
+
+Your task: Generate a structured health risk prediction report with the following exact format (use these exact headings):
+
+OVERALL RISK SCORE: [number 0-100]
+RISK LEVEL: [Low/Moderate/High/Critical]
+
+TOP RISK FACTORS:
+• [risk factor 1]: [brief explanation]
+• [risk factor 2]: [brief explanation]
+• [risk factor 3 if applicable]
+
+PREDICTED CONDITIONS TO WATCH:
+• [condition]: [likelihood and why based on current data]
+
+PROTECTIVE FACTORS:
+• [positive aspects of their health profile]
+
+RECOMMENDED PREVENTIVE ACTIONS:
+1. [specific action with timeline]
+2. [specific action]
+3. [specific action]
+
+NEXT SCREENING RECOMMENDATIONS:
+• [test/screening]: [when and why]
+
+Be specific, data-driven, and reference actual values from their reports. Keep it actionable and supportive in tone.`;
+
+  try {
+    const res = await callClaudeAPI(prompt);
+    // Parse risk score from response
+    const scoreMatch = res.match(/OVERALL RISK SCORE:\s*(\d+)/i);
+    const levelMatch = res.match(/RISK LEVEL:\s*(\w+)/i);
+    const score = scoreMatch ? parseInt(scoreMatch[1]) : 40;
+    const level = levelMatch ? levelMatch[1] : 'Moderate';
+    const levelColor = level==='Low'?'var(--green)':level==='Moderate'?'var(--amber)':level==='High'||level==='Critical'?'var(--red)':'var(--amber)';
+
+    card.innerHTML = `
+      <div class="card-title">Risk Assessment Result</div>
+      <div class="risk-gauge-wrap">
+        <div class="risk-label" style="color:${levelColor};">${level} Risk</div>
+        <div class="risk-score" style="color:${levelColor};">${score}<span style="font-size:1.5rem;color:var(--muted);">/100</span></div>
+        <div class="risk-bar">
+          <div class="risk-indicator" id="risk-dot" style="left:0%;"></div>
+        </div>
+        <div class="risk-ticks"><span>Low</span><span>Moderate</span><span>High</span><span>Critical</span></div>
+      </div>
+      <div class="notif ${level==='Low'?'success':level==='Moderate'?'warn':'danger'}" style="margin-top:0.8rem;">
+        <span>${level==='Low'?'✅':level==='Moderate'?'⚠️':'🚨'}</span>
+        <div><strong>${level} Risk Level Detected</strong><br><span style="font-size:0.78rem;">Based on ${(pt.reports||[]).length} reports and medical history</span></div>
+      </div>`;
+
+    // Animate indicator
+    setTimeout(()=>{ const dot=document.getElementById('risk-dot'); if(dot) dot.style.left=Math.min(score,98)+'%'; },300);
+
+    document.getElementById('risk-detail-section').innerHTML = `
+      <div class="ai-result-box" style="margin-top:1.2rem;${level==='Low'?'border-left-color:var(--green)':level==='High'||level==='Critical'?'border-left-color:var(--red)':''}">
+        <div class="ai-result-header">
+          <span style="font-size:1.2rem;">🤖</span>
+          <span class="ai-tag" style="background:rgba(212,128,42,0.1);color:var(--amber);">Full AI Risk Report</span>
+          <span style="font-size:0.88rem;font-weight:600;color:var(--crimson-dark);">${pt.name}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);margin-left:auto;">${new Date().toLocaleDateString()}</span>
+        </div>
+        <div class="ai-result-content">${res}</div>
+        <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--cream-dark);display:flex;gap:0.6rem;">
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('ai-chat')">💬 Discuss with AI</button>
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('appointments')">📅 Book Follow-up</button>
+        </div>
+      </div>`;
+  } catch(e) {
+    card.innerHTML = `<div class="card-title">Risk Assessment</div><div class="notif warn">⚠️ AI risk analysis unavailable. Please try again.</div>`;
+  }
+}
+
+// ============================================================
+// TASK 4: ANSWER PATIENT QUESTIONS — also in renderAIChat
+// Doctor AI Chat (clinical mode)
+// ============================================================
+function renderDoctorAI(main) {
+  chatHistory=[];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">🤖 AI Clinical Analysis Tool</div>
+      <div class="page-sub">Ask clinical questions, get AI-assisted differential diagnoses, or analyze patient data.</div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#1A3A5C,#0D2240);padding:1rem 1.5rem;display:flex;align-items:center;gap:0.8rem;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(26,82,118,0.4);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🩺</div>
+          <div>
+            <div style="font-weight:700;font-size:0.92rem;color:var(--white);">MedCard AI — Clinical Mode</div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:rgba(100,180,255,0.7);">DOCTOR PORTAL · CLINICAL ANALYSIS</div>
+          </div>
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-msgs">
+            <div class="msg ai"><div class="ai-label">MedCard AI — Clinical Mode</div>Hello Dr. ${currentUser.name.replace('Dr.','').trim()}. I'm in clinical mode with access to all patient data. I can help with differential diagnoses, lab interpretation, treatment protocols, and patient summaries.<br><br>Patient database: ${DB.patients.map(p=>`<strong>${p.name}</strong> (${p.blood}, ${p.conditions.join(',')||'no conditions'})`).join(', ')}. How can I assist you?</div>
+          </div>
+          <div style="padding:0 1rem 1rem;" class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" rows="1" placeholder="Ask a clinical question..." onkeydown="handleChatKey(event,'sendDoctorChat')"></textarea>
+            <button class="btn btn-primary" onclick="sendDoctorChat()">Send</button>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;">
+        <div style="font-size:0.75rem;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Clinical quick prompts:</div>
+        <div class="quick-btns">
+          ${["Suggest differential diagnosis for chest pain with normal ECG","Interpret: FEV1 72%, mild obstruction — management options","Safe antihypertensives for patient with asthma","Summarize Riya Jain's complete risk profile","Drug interactions to check for hypertension + asthma patient"].map(q =>
+            `<button class="btn btn-outline btn-sm" onclick="quickDoctorAsk('${q.replace(/'/g,"\\'")}')">${q}</button>`
+          ).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function quickDoctorAsk(q) { document.getElementById('chat-input').value=q; sendDoctorChat(); }
+
+async function sendDoctorChat() {
+  const input = document.getElementById('chat-input');
+  const msgs = document.getElementById('chat-msgs');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value='';
+  msgs.innerHTML += `<div class="msg user">${text}</div>`;
+  const loadId='load-'+Date.now();
+  msgs.innerHTML += `<div class="msg loading" id="${loadId}"><div class="ai-label">MedCard AI</div><div class="dots"><span></span><span></span><span></span></div></div>`;
+  msgs.scrollTop=msgs.scrollHeight;
+  chatHistory.push({role:'user',content:text});
+  const sysPrompt = `You are MedCard AI in clinical mode, assisting Doctor ${currentUser.name}. You have access to the following patient data: ${DB.patients.map(p=>`${p.name} (ID: ${p.id}, Blood: ${p.blood}, Conditions: ${p.conditions.join(',')||'none'}, Allergies: ${p.allergies}, Reports: ${p.reports.map(r=>r.name+' ['+r.status+']: '+r.notes).join('; ')||'none'})`).join(' | ')}. Respond in a clinical, evidence-based manner. Use medical terminology appropriately. Provide structured responses with clear headings when analyzing complex cases. Note this is an AI assistant — final clinical decisions rest with the physician.`;
+  try {
+    const res = await callClaudeAPI(text, sysPrompt, chatHistory.slice(-8));
+    chatHistory.push({role:'assistant',content:res});
+    document.getElementById(loadId).outerHTML = `<div class="msg ai"><div class="ai-label">MedCard AI — Clinical</div>${res.replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    document.getElementById(loadId).outerHTML = `<div class="msg ai"><div class="ai-label">MedCard AI</div>Connection error. Please retry.</div>`;
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ============================================================
+// E-CARD PAGE — Fully working with real QR via qrserver.com API
+// ============================================================
+function renderECard(main) {
+  const pt = currentUser;
+  const pid = pt.id||'XXXXXXXXXXXX';
+  const issued = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">My Medical E-Card</div>
+      <div class="page-sub">Your digital health identity card — scannable QR gives instant hospital access.</div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="text-align:center;padding:1.5rem;">
+            <div style="font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;">Live Preview</div>
+            <!-- Canvas-rendered card -->
+            <canvas id="ecard-canvas" width="680" height="430" style="width:100%;max-width:340px;border-radius:16px;box-shadow:0 20px 60px rgba(74,14,26,0.35);display:block;margin:0 auto;"></canvas>
+            <div style="margin-top:1.5rem;display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="printECard()">🖨 Print Card</button>
+              <button class="btn btn-amber" onclick="downloadECard()">⬇ Download PNG</button>
+              <button class="btn btn-outline" onclick="shareECard()">📤 Share QR</button>
+            </div>
+            <div style="margin-top:1rem;padding:0.8rem;background:rgba(45,122,79,0.06);border-radius:8px;border:1px solid rgba(45,122,79,0.15);">
+              <div style="font-size:0.75rem;color:var(--green);font-weight:600;">✅ Card Active & Verified</div>
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">QR encodes your patient ID, blood type, and emergency data</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Card Information</div>
+            <div class="metric-row"><div class="metric-name">Full Name</div><div style="font-weight:600;font-size:0.88rem;">${pt.name}</div></div>
+            <div class="metric-row"><div class="metric-name">Patient ID</div><div style="font-family:'DM Mono',monospace;font-size:0.82rem;">${pid}</div></div>
+            <div class="metric-row"><div class="metric-name">Date of Birth</div><div style="font-size:0.88rem;">${pt.dob||'—'}</div></div>
+            <div class="metric-row"><div class="metric-name">Blood Type</div><div><span class="badge red">${pt.blood||'—'}</span></div></div>
+            <div class="metric-row"><div class="metric-name">Allergies</div><div style="font-size:0.88rem;">${pt.allergies||'None'}</div></div>
+            <div class="metric-row"><div class="metric-name">Known Conditions</div><div style="font-size:0.88rem;">${(pt.conditions||[]).join(', ')||'None'}</div></div>
+            <div class="metric-row"><div class="metric-name">Issued</div><div style="font-size:0.88rem;">${issued}</div></div>
+          </div>
+          <div class="card" style="margin-top:1.2rem;">
+            <div class="card-title">Large QR Code</div>
+            <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+              <img id="qr-large-img"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports')}&color=4A0E1A&bgcolor=ffffff&margin=10"
+                width="200" height="200"
+                style="border-radius:8px;box-shadow:0 4px 16px rgba(74,14,26,0.12);display:block;"
+                alt="Patient QR Code" />
+            </div>
+            <p style="font-size:0.82rem;color:var(--muted);text-align:center;">Scan at any partner hospital for instant record access — no login required.</p>
+            <div style="margin-top:0.8rem;padding:0.6rem;background:var(--cream);border-radius:6px;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);word-break:break-all;text-align:center;" id="qr-url-label">
+              Open this file on your phone to scan ↑
+            </div>
+          </div>
+          <div class="card" style="margin-top:1.2rem;">
+            <div class="card-title">Emergency Access Info</div>
+            <div class="notif warn">
+              <span>🚨</span>
+              <div><strong>Emergency Data Encoded in QR</strong><br><span style="font-size:0.78rem;">Blood type ${pt.blood||'Unknown'}, Allergies: ${pt.allergies||'None'}, Conditions: ${(pt.conditions||[]).join(', ')||'None'}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  // Draw card and QR after DOM is ready
+  setTimeout(() => {
+    const qrData = 'http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports';
+    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data='+encodeURIComponent(qrData)+'&color=4A0E1A&bgcolor=ffffff&margin=4';
+    const qrImg = new Image();
+    qrImg.crossOrigin = 'anonymous';
+    qrImg.onload = () => drawECard(pt, pid, qrImg);
+    qrImg.onerror = () => drawECard(pt, pid, null);
+    qrImg.src = qrUrl;
+  }, 100);
+}
+
+function drawECard(pt, pid, qrImg) {
+  const canvas = document.getElementById('ecard-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 680, H = 430;
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0,0,W,H);
+  grad.addColorStop(0,'#6B1525');
+  grad.addColorStop(0.55,'#3A0A14');
+  grad.addColorStop(1,'#5A1020');
+  ctx.fillStyle = grad;
+  roundRect(ctx,0,0,W,H,32);
+  ctx.fill();
+
+  // Radial glow
+  const glow = ctx.createRadialGradient(W*0.7,H*0.3,0,W*0.7,H*0.3,W*0.5);
+  glow.addColorStop(0,'rgba(212,128,42,0.18)');
+  glow.addColorStop(1,'transparent');
+  ctx.fillStyle=glow; ctx.fillRect(0,0,W,H);
+
+  // Decorative circle
+  ctx.strokeStyle='rgba(212,128,42,0.15)'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(W-60,H+60,320,0,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W-60,H+60,260,0,Math.PI*2); ctx.stroke();
+
+  // Grid lines
+  ctx.strokeStyle='rgba(250,245,238,0.03)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Brand name
+  ctx.font = 'bold 38px serif';
+  ctx.fillStyle = '#D4802A';
+  ctx.fillText('MedCard', 52, 80);
+  ctx.fillStyle = '#E8A04A';
+  ctx.fillText(' AI', 52 + ctx.measureText('MedCard').width, 80);
+
+  ctx.font = '500 22px monospace';
+  ctx.fillStyle = 'rgba(212,128,42,0.5)';
+  ctx.fillText('SILVER OAK UNIVERSITY', 52, 108);
+
+  // "PATIENT" badge top right
+  ctx.fillStyle = 'rgba(250,245,238,0.12)';
+  ctx.strokeStyle = 'rgba(250,245,238,0.2)'; ctx.lineWidth=1.5;
+  roundRect(ctx, W-160,42,110,34,20); ctx.fill(); ctx.stroke();
+  ctx.font = '500 18px monospace';
+  ctx.fillStyle = 'rgba(250,245,238,0.55)';
+  ctx.fillText('PATIENT', W-152, 66);
+
+  // Divider line
+  ctx.strokeStyle='rgba(250,245,238,0.08)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(52,130); ctx.lineTo(W-52,130); ctx.stroke();
+
+  // QR code (small, on card) — white background box
+  ctx.fillStyle='#fff';
+  roundRect(ctx,52,152,136,136,10); ctx.fill();
+  if (qrImg) {
+    ctx.drawImage(qrImg, 56, 156, 128, 128);
+  } else {
+    // Fallback placeholder text if QR didn't load
+    ctx.fillStyle='rgba(74,14,26,0.3)';
+    ctx.font='500 14px monospace';
+    ctx.fillText('QR', 100, 225);
+  }
+
+  // Name
+  ctx.font = 'bold 36px serif';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(pt.name, 210, 200);
+
+  // Patient ID
+  ctx.font = '500 22px monospace';
+  ctx.fillStyle = 'rgba(212,128,42,0.85)';
+  ctx.fillText('ID · ' + pid, 210, 232);
+
+  // Detail labels
+  const details = [['BLOOD TYPE', pt.blood||'—'],['DATE OF BIRTH', pt.dob||'—'],['ALLERGIES', pt.allergies||'None'],['CONDITIONS', (pt.conditions||[]).join(', ')||'None']];
+  details.forEach(([label,val],i) => {
+    const col = i < 2 ? 210 : 210 + 200;
+    const row = 265 + (i%2)*50;
+    ctx.font = '500 17px monospace';
+    ctx.fillStyle = 'rgba(250,245,238,0.35)';
+    ctx.fillText(label, col, row);
+    ctx.font = '500 22px monospace';
+    ctx.fillStyle = 'rgba(250,245,238,0.9)';
+    ctx.fillText(val.length > 14 ? val.slice(0,14)+'…' : val, col, row+24);
+  });
+
+  // Bottom bar
+  ctx.font = '500 20px monospace';
+  ctx.fillStyle = 'rgba(250,245,238,0.3)';
+  ctx.fillText('•••• •••• ' + pid.slice(-4), 52, H-44);
+
+  // Chip
+  const chipGrad = ctx.createLinearGradient(W-130,H-72,W-54,H-44);
+  chipGrad.addColorStop(0,'#D4802A'); chipGrad.addColorStop(1,'#E8A04A');
+  ctx.fillStyle = chipGrad;
+  roundRect(ctx, W-130, H-72, 76, 44, 8); ctx.fill();
+  // Chip lines
+  ctx.strokeStyle='rgba(74,14,26,0.3)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(W-130+20,H-72); ctx.lineTo(W-130+20,H-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W-130+55,H-72); ctx.lineTo(W-130+55,H-28); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(W-130,H-72+15); ctx.lineTo(W-54,H-72+15); ctx.stroke();
+
+  // Issued date bottom
+  ctx.font = '500 18px monospace';
+  ctx.fillStyle = 'rgba(250,245,238,0.3)';
+  ctx.fillText('ISSUED '+new Date().toLocaleDateString('en-GB',{month:'2-digit',year:'numeric'}), 52, H-18);
+
+  // Now draw large QR
+  const qrLarge = document.getElementById('qr-large-canvas');
+  if (qrLarge) {
+    const lctx = qrLarge.getContext('2d');
+    lctx.fillStyle = '#fff'; lctx.fillRect(0,0,200,200);
+    const qrL = generateQR(qrText, 200);
+    lctx.drawImage(qrL, 0, 0, 200, 200);
+    // Add subtle border
+    lctx.strokeStyle='rgba(74,14,26,0.08)'; lctx.lineWidth=1;
+    lctx.strokeRect(0,0,200,200);
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+function downloadECard() {
+  const canvas = document.getElementById('ecard-canvas');
+  if (!canvas) { alert('Card not loaded yet. Please wait a moment.'); return; }
+  const link = document.createElement('a');
+  link.download = `MedCard_${currentUser.name.replace(/\s+/g,'_')}_${currentUser.id}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function printECard() {
+  const canvas = document.getElementById('ecard-canvas');
+  if (!canvas) return;
+  const dataUrl = canvas.toDataURL('image/png');
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>MedCard AI — ${currentUser.name}</title>
+    <style>
+      body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#FAF5EE;font-family:sans-serif;}
+      .wrap{text-align:center;}
+      img{width:340px;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.2);}
+      p{color:#8A7070;font-size:12px;margin-top:12px;}
+      @media print{body{background:white;}p{display:none;}}
+    </style></head>
+    <body><div class="wrap">
+      <img src="${dataUrl}" />
+      <p>MedCard AI · Silver Oak University · Patient ID: ${currentUser.id}</p>
+    </div></body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(), 500);
+}
+
+function shareECard() {
+  const canvas = document.getElementById('qr-large-canvas');
+  if (!canvas) return;
+  if (navigator.share && navigator.canShare) {
+    canvas.toBlob(blob => {
+      const file = new File([blob], 'MedCard_QR.png', {type:'image/png'});
+      if (navigator.canShare({files:[file]})) {
+        navigator.share({title:'My MedCard QR', text:`Patient: ${currentUser.name} | ID: ${currentUser.id}`, files:[file]});
+        return;
+      }
+      fallbackShare();
+    });
+  } else { fallbackShare(); }
+}
+
+function fallbackShare() {
+  const url = 'http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports';
+  navigator.clipboard?.writeText(url).then(()=>alert('✅ QR URL copied:\n'+url)).catch(()=>alert('QR URL: '+url));
+}
+
+// ============================================================
+// APPOINTMENTS
+// ============================================================
+function renderAppointments(main) {
+  const appts = currentUser.appointments||[];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="section-head">
+        <div><div class="page-title">Appointments</div><div class="page-sub">Your scheduled visits and consultations.</div></div>
+        <button class="btn btn-amber" onclick="bookAppointment()">+ Book New</button>
+      </div>
+      ${appts.length ? appts.map(a => `
+        <div class="appt-card">
+          <div class="appt-date"><div class="appt-day">${a.day}</div><div class="appt-mon">${a.month}</div></div>
+          <div class="appt-divider"></div>
+          <div class="appt-info"><div class="appt-title">${a.specialty} Consultation</div><div class="appt-doctor">${a.doctor}</div></div>
+          <span class="badge blue">${a.status}</span>
+          <button class="btn btn-sm btn-outline" style="margin-left:0.5rem;">Cancel</button>
+        </div>`).join('') : `<div class="empty-state"><div class="icon">📅</div><h3>No Appointments</h3><p>Book your first appointment below.</p></div>`}
+    </div>`;
+}
+
+function bookAppointment() {
+  const doctor = DB.doctors[Math.floor(Math.random()*DB.doctors.length)];
+  const days=['05','12','19','26']; const months=['APR','MAY'];
+  const newAppt={id:'A'+Date.now(),day:days[Math.floor(Math.random()*days.length)],month:months[Math.floor(Math.random()*months.length)],doctor:doctor.name,specialty:doctor.specialty,status:'Upcoming'};
+  if(!currentUser.appointments)currentUser.appointments=[];
+  currentUser.appointments.push(newAppt);
+  renderPage('appointments');
+}
+
+// ============================================================
+// HEALTH METRICS
+// ============================================================
+function renderMetrics(main) {
+  const metrics = [
+    {name:'Blood Pressure',val:'128/82',pct:72,state:'warn',unit:'mmHg'},
+    {name:'Heart Rate',val:'76 bpm',pct:60,state:'ok',unit:'bpm'},
+    {name:'Blood Sugar',val:'5.6 mmol/L',pct:55,state:'ok',unit:'mmol/L'},
+    {name:'Hemoglobin',val:'13.2 g/dL',pct:80,state:'ok',unit:'g/dL'},
+    {name:'Cholesterol',val:'195 mg/dL',pct:65,state:'ok',unit:'mg/dL'},
+    {name:'BMI',val:'24.5',pct:70,state:'ok',unit:'kg/m²'},
+  ];
+  main.innerHTML = `
+    <div class="page active">
+      <div class="section-head">
+        <div><div class="page-title">Health Metrics</div><div class="page-sub">Tracked vitals and AI-powered recommendations based on your readings.</div></div>
+        <button class="btn btn-amber" onclick="getMetricsInsights()">🤖 Get AI Insights</button>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Vital Signs</div>
+          ${metrics.map(m => `
+            <div class="metric-row">
+              <div class="metric-name">${m.name}</div>
+              <div class="metric-bar-wrap"><div class="metric-bar ${m.state}" style="width:${m.pct}%"></div></div>
+              <div class="metric-val">${m.val}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card">
+          <div class="card-title">Medical Timeline</div>
+          <div class="timeline">
+            ${(currentUser.reports||[]).map(r => `
+              <div class="tl-item">
+                <div class="tl-dot"></div>
+                <div class="tl-date">${r.date}</div>
+                <div class="tl-title">${r.name}</div>
+                <div class="tl-desc">${r.notes}</div>
+              </div>
+            `).join('')||'<p style="color:var(--muted);font-size:0.85rem;">No records yet.</p>'}
+          </div>
+        </div>
+      </div>
+      <div id="metrics-ai-insights"></div>
+    </div>`;
+}
+
+async function getMetricsInsights() {
+  const el = document.getElementById('metrics-ai-insights');
+  el.innerHTML = `<div class="ai-result-box" style="margin-top:1.2rem;">
+    <div class="ai-result-header"><span style="font-size:1.2rem;">🤖</span><span class="ai-tag">Generating Insights</span></div>
+    <div class="msg loading"><div class="dots"><span></span><span></span><span></span></div></div>
+  </div>`;
+  const pt = currentUser;
+  const prompt = `You are MedCard AI providing health insights and recommendations. Patient: ${pt.name}, Blood: ${pt.blood}, Conditions: ${(pt.conditions||[]).join(',')||'None'}, Allergies: ${pt.allergies||'None'}.
+
+Current vitals: Blood Pressure: 128/82 mmHg (slightly elevated), Heart Rate: 76 bpm (normal), Blood Sugar: 5.6 mmol/L (normal), Hemoglobin: 13.2 g/dL (normal), Cholesterol: 195 mg/dL (borderline), BMI: 24.5 (healthy).
+
+Reports: ${(pt.reports||[]).map(r=>`${r.name}: ${r.status} — ${r.notes}`).join('; ')||'None'}.
+
+Provide personalized health insights with these sections:
+📊 CURRENT HEALTH STATUS
+(Overall assessment of their vitals in 2-3 sentences)
+
+💡 KEY INSIGHTS
+• (specific observations about their readings)
+
+🥗 LIFESTYLE RECOMMENDATIONS
+• (diet, exercise, habits tailored to their conditions)
+
+💊 MONITORING PRIORITY
+• (what to watch most closely and why)
+
+📅 NEXT STEPS
+• (concrete actions with timelines)
+
+Be specific and reference their actual numbers. Be encouraging and supportive.`;
+  try {
+    const res = await callClaudeAPI(prompt);
+    el.innerHTML = `<div class="ai-result-box success" style="margin-top:1.2rem;">
+      <div class="ai-result-header"><span style="font-size:1.2rem;">🤖</span><span class="ai-tag" style="background:rgba(45,122,79,0.1);color:var(--green);">Health Insights</span></div>
+      <div class="ai-result-content">${res}</div>
+    </div>`;
+  } catch(e) {
+    el.innerHTML=`<div class="notif warn" style="margin-top:1rem;">⚠️ AI insights unavailable. Please try again.</div>`;
+  }
+}
+
+// ============================================================
+// POLICIES
+// ============================================================
+function renderPolicies(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Healthcare Policies</div>
+      <div class="page-sub">Latest policies and guidelines from the health system administrator.</div>
+      ${DB.policies.map(p => `
+        <div class="card" style="margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem;color:var(--crimson-dark);">${p.title}</div>
+              <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">Published: ${p.date}</div>
+            </div>
+            <span class="badge ${p.status==='Active'?'green':'amber'}">${p.status}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+// ============================================================
+// DOCTOR PAGES
+// ============================================================
+function renderDoctorDashboard(main) {
+  const total = DB.patients.reduce((s,p)=>s+p.reports.length,0);
+  const appts = DB.patients.reduce((s,p)=>s+p.appointments.length,0);
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Doctor Dashboard</div>
+      <div class="page-sub">Welcome, ${currentUser.name}. Here's today's overview.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">${DB.patients.length}</div><div class="stat-lbl">Total Patients</div></div>
+        <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-lbl">Reports Filed</div></div>
+        <div class="stat-card"><div class="stat-num">${appts}</div><div class="stat-lbl">Appointments</div></div>
+        <div class="stat-card"><div class="stat-num">${DB.patients.flatMap(p=>p.reports.filter(r=>r.status==='Abnormal'||r.status==='Review')).length}</div><div class="stat-lbl">Pending Reviews</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Recent Patients</div>
+          ${DB.patients.map(p => `
+            <div style="display:flex;align-items:center;gap:0.8rem;padding:0.7rem 0;border-bottom:1px solid var(--cream-dark);">
+              <div style="width:38px;height:38px;border-radius:50%;background:var(--crimson-dark);color:var(--amber);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:900;font-size:1rem;flex-shrink:0;">${p.name[0]}</div>
+              <div style="flex:1;"><div style="font-weight:600;font-size:0.88rem;">${p.name}</div><div style="font-size:0.75rem;color:var(--muted);">ID: ${p.id} · ${p.blood} · ${p.conditions.join(', ')||'No conditions'}</div></div>
+              <button class="btn btn-sm btn-outline" onclick="viewPatient('${p.id}')">View</button>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card">
+          <div class="card-title">Reports Needing Review</div>
+          ${DB.patients.flatMap(p=>p.reports.filter(r=>r.status==='Abnormal'||r.status==='Review'||r.status==='Pending').map(r=>({...r,patientName:p.name}))).map(r=>`
+            <div class="notif ${r.status==='Abnormal'?'warn':'info'}">
+              <span>${r.status==='Abnormal'?'⚠️':'🔵'}</span>
+              <div><strong>${r.name}</strong> — ${r.patientName}<div style="font-size:0.78rem;margin-top:0.2rem;">${r.notes}</div></div>
+            </div>
+          `).join('')||'<p style="color:var(--muted);font-size:0.85rem;">No pending reviews.</p>'}
+        </div>
+      </div>
+    </div>`;
+}
+
+function viewPatient(id) {
+  const p = DB.patients.find(pt=>pt.id===id);
+  if (!p) return;
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="page active">
+      <button class="btn btn-outline btn-sm" onclick="navigateTo('doc-patients')" style="margin-bottom:1rem;">← Back to Patients</button>
+      <div class="page-title">${p.name}</div>
+      <div class="page-sub">Patient ID: ${p.id} · Blood: ${p.blood} · Allergies: ${p.allergies}</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Medical Reports</div>
+          ${p.reports.map(r=>`
+            <div class="report-card" style="margin-bottom:0.6rem;">
+              <div class="report-icon">${r.type==='Lab'?'🧪':r.type==='Cardiac'?'❤️':r.type==='Pulmonology'?'🫁':'📄'}</div>
+              <div class="report-info"><div class="report-name">${r.name}</div><div class="report-meta">${r.date} · <span class="badge ${r.status==='Normal'?'green':r.status==='Abnormal'?'red':'amber'}">${r.status}</span></div><div style="font-size:0.78rem;color:var(--muted);">${r.notes}</div></div>
+            </div>`).join('')||'<p style="color:var(--muted);">No reports.</p>'}
+        </div>
+        <div>
+          <div class="card">
+            <div class="card-title">Known Conditions</div>
+            ${p.conditions.map(c=>`<span class="badge amber" style="margin:0.2rem;">${c}</span>`).join('')||'<p style="color:var(--muted);font-size:0.85rem;">None recorded.</p>'}
+          </div>
+          <div class="card" style="margin-top:1rem;">
+            <div class="card-title">🤖 AI Patient Summary</div>
+            <button class="btn btn-amber" style="width:100%;" onclick="aiPatientSummary('${p.id}')">Generate AI Clinical Summary</button>
+            <div id="ai-pt-summary" style="margin-top:1rem;"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function aiPatientSummary(pid) {
+  const p = DB.patients.find(pt=>pt.id===pid);
+  if (!p) return;
+  const el = document.getElementById('ai-pt-summary');
+  el.innerHTML = `<div class="msg loading"><div class="dots"><span></span><span></span><span></span></div></div>`;
+  const prompt = `You are MedCard AI clinical assistant. Generate a concise structured clinical summary for Doctor ${currentUser.name}:
+Patient: ${p.name}, DOB: ${p.dob}, Blood: ${p.blood}, Allergies: ${p.allergies}, Conditions: ${p.conditions.join(', ')||'None'}.
+Reports: ${p.reports.map(r=>`${r.name} (${r.date}, ${r.status}: ${r.notes})`).join('; ')||'None'}.
+
+Include: Clinical Summary | Risk Factors | Flagged Findings | Recommended Follow-ups. Be clinical, concise, and evidence-based.`;
+  try {
+    const res = await callClaudeAPI(prompt);
+    el.innerHTML = `<div style="font-size:0.85rem;line-height:1.7;white-space:pre-wrap;color:var(--dark);">${res}</div>`;
+  } catch(e) { el.innerHTML=`<p style="color:var(--red);">AI unavailable. Please retry.</p>`; }
+}
+
+function renderDoctorPatients(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="section-head">
+        <div><div class="page-title">Patients</div><div class="page-sub">All registered patients in the system.</div></div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Patient ID</th><th>Blood</th><th>Conditions</th><th>Reports</th><th>Action</th></tr></thead>
+            <tbody>
+              ${DB.patients.map(p=>`
+                <tr>
+                  <td><strong>${p.name}</strong></td>
+                  <td><span style="font-family:'DM Mono',monospace;font-size:0.8rem;">${p.id}</span></td>
+                  <td><span class="badge red">${p.blood}</span></td>
+                  <td>${p.conditions.join(', ')||'—'}</td>
+                  <td>${p.reports.length}</td>
+                  <td><button class="btn btn-sm btn-primary" onclick="viewPatient('${p.id}')">View</button></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderDoctorAppointments(main) {
+  const allAppts = DB.patients.flatMap(p=>p.appointments.map(a=>({...a,patientName:p.name})));
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Appointment Schedule</div>
+      <div class="page-sub">All upcoming patient appointments.</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Patient</th><th>Specialty</th><th>Status</th></tr></thead>
+            <tbody>
+              ${allAppts.map(a=>`<tr>
+                <td><strong>${a.day} ${a.month}</strong></td>
+                <td>${a.patientName}</td>
+                <td>${a.specialty}</td>
+                <td><span class="badge blue">${a.status}</span></td>
+              </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);">No appointments.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderDoctorAnalytics(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Analytics Dashboard</div>
+      <div class="page-sub">Patient population health insights.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">87.5%</div><div class="stat-lbl">Have health issues</div><div class="stat-trend up">↑ Survey data</div></div>
+        <div class="stat-card"><div class="stat-num">75%</div><div class="stat-lbl">Lost records before</div><div class="stat-trend down">↓ Platform solving this</div></div>
+        <div class="stat-card"><div class="stat-num">30%</div><div class="stat-lbl">Efficiency boost</div><div class="stat-trend up">↑ Via AI automation</div></div>
+        <div class="stat-card"><div class="stat-num">20%</div><div class="stat-lbl">Satisfaction rise</div><div class="stat-trend up">↑ Post-platform</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Condition Distribution</div>
+          ${['Hypertension','Asthma','Allergies','Diabetes & BP','Heart Conditions'].map((c,i)=>{const pct=[40,25,35,20,15][i];return`<div class="metric-row"><div class="metric-name">${c}</div><div class="metric-bar-wrap"><div class="metric-bar" style="width:${pct}%;background:var(--crimson-dark);opacity:${0.5+i*0.1}"></div></div><div class="metric-val">${pct}%</div></div>`;}).join('')}
+        </div>
+        <div class="card">
+          <div class="card-title">Report Status Breakdown</div>
+          ${[['Normal','green',3],['Abnormal','red',1],['Review','amber',1],['Pending','blue',1]].map(([s,c,n])=>`<div class="metric-row"><div class="metric-name">${s}</div><span class="badge ${c}">${n} reports</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAddReport(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Add Patient Report</div>
+      <div class="page-sub">Upload and attach a medical report to a patient's record.</div>
+      <div class="card">
+        <div class="form-group">
+          <label class="form-label">Select Patient</label>
+          <select class="form-input" id="rpt-patient">${DB.patients.map(p=>`<option value="${p.id}">${p.name} (${p.id})</option>`).join('')}</select>
+        </div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Report Name</label><input class="form-input" id="rpt-name" placeholder="e.g. Blood Count Report" /></div>
+          <div class="form-group"><label class="form-label">Report Type</label>
+            <select class="form-input" id="rpt-type"><option>Lab</option><option>Cardiac</option><option>Radiology</option><option>Pulmonology</option><option>Allergy</option><option>General</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select class="form-input" id="rpt-status"><option>Normal</option><option>Abnormal</option><option>Review</option><option>Pending</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Clinical Notes</label><textarea class="form-input" id="rpt-notes" rows="3" placeholder="Enter clinical findings and observations..."></textarea></div>
+        <div class="upload-zone" onclick="document.getElementById('doc-upload').click()" style="margin-bottom:1rem;">
+          <div class="icon">📎</div><strong>Attach report file (optional)</strong><p>PDF, JPG, PNG</p>
+        </div>
+        <input type="file" id="doc-upload" style="display:none" />
+        <button class="btn btn-amber" onclick="submitReport()">Submit Report</button>
+      </div>
+      <div id="report-submit-result"></div>
+    </div>`;
+}
+
+function submitReport() {
+  const pid = document.getElementById('rpt-patient').value;
+  const name = document.getElementById('rpt-name').value.trim();
+  const type = document.getElementById('rpt-type').value;
+  const status = document.getElementById('rpt-status').value;
+  const notes = document.getElementById('rpt-notes').value.trim();
+  if (!name) { alert('Report name required.'); return; }
+  const pt = DB.patients.find(p=>p.id===pid);
+  if (pt) {
+    pt.reports.unshift({id:'R'+Date.now(),name,date:new Date().toISOString().slice(0,10),type,status,notes});
+    document.getElementById('report-submit-result').innerHTML=`<div class="notif success" style="margin-top:1rem;">✅ Report "${name}" added to ${pt.name}'s record successfully.</div>`;
+  }
+}
+
+// ============================================================
+// ADMIN PAGES
+// ============================================================
+function renderAdminDashboard(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">Superadmin Dashboard</div>
+      <div class="page-sub">System-wide overview and management.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">${DB.patients.length}</div><div class="stat-lbl">Registered Patients</div></div>
+        <div class="stat-card"><div class="stat-num">${DB.doctors.length}</div><div class="stat-lbl">Active Doctors</div></div>
+        <div class="stat-card"><div class="stat-num">${DB.policies.length}</div><div class="stat-lbl">Policies</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:var(--green);">100%</div><div class="stat-lbl">System Uptime</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">System Health</div>
+          ${[['API Response Time','94ms','ok'],['Database Load','38%','ok'],['AI Module Status','Online','ok'],['Security Alerts','0','ok']].map(([n,v,s])=>`<div class="metric-row"><div class="metric-name">${n}</div><span class="badge ${s==='ok'?'green':'amber'}">${v}</span></div>`).join('')}
+        </div>
+        <div class="card">
+          <div class="card-title">Recent Activity</div>
+          <div class="timeline">
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Today, 09:14</div><div class="tl-title">New patient registered</div><div class="tl-desc">Via Patient Portal</div></div>
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Today, 08:55</div><div class="tl-title">Report uploaded</div><div class="tl-desc">Dr. Mehta → Riya Jain</div></div>
+            <div class="tl-item"><div class="tl-dot"></div><div class="tl-date">Yesterday, 16:30</div><div class="tl-title">Policy updated</div><div class="tl-desc">HIPAA Compliance 2026</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:1.2rem;">
+        <div class="card-title">AI Modules Status</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.8rem;margin-top:0.5rem;">
+          ${[['🔬','Report Analyzer','Active'],['💬','Patient Chatbot','Active'],['⚠️','Risk Predictor','Active'],['💡','Health Insights','Active'],['🔐','OTP Auth','Active'],['📊','Analytics','Active']].map(([i,n,s])=>`
+            <div style="padding:0.8rem;border-radius:8px;background:rgba(45,122,79,0.06);border:1px solid rgba(45,122,79,0.15);display:flex;align-items:center;gap:0.6rem;">
+              <span style="font-size:1.2rem;">${i}</span>
+              <div><div style="font-size:0.82rem;font-weight:600;">${n}</div><span class="badge green" style="font-size:0.6rem;">${s}</span></div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAdminUsers(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">All Users</div>
+      <div class="page-sub">Manage patients and doctors across the system.</div>
+      <div class="card">
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;">Patients</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>ID</th><th>Blood</th><th>Conditions</th><th>Reports</th><th>Status</th></tr></thead>
+            <tbody>
+              ${DB.patients.map(p=>`<tr>
+                <td><strong>${p.name}</strong></td>
+                <td><span style="font-family:'DM Mono',monospace;font-size:0.78rem;">${p.id}</span></td>
+                <td><span class="badge red">${p.blood}</span></td>
+                <td>${p.conditions.join(', ')||'—'}</td>
+                <td>${p.reports.length}</td>
+                <td><span class="badge green">Active</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="divider"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem;">Doctors</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>ID</th><th>Specialty</th><th>Status</th></tr></thead>
+            <tbody>
+              ${DB.doctors.map(d=>`<tr>
+                <td><strong>${d.name}</strong></td>
+                <td><span style="font-family:'DM Mono',monospace;font-size:0.78rem;">${d.id}</span></td>
+                <td>${d.specialty}</td>
+                <td><span class="badge green">Active</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderAdminPolicies(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="section-head">
+        <div><div class="page-title">Healthcare Policies</div><div class="page-sub">Manage and publish system-wide policies.</div></div>
+        <button class="btn btn-amber" onclick="addPolicy()">+ Add Policy</button>
+      </div>
+      <div id="policy-list">
+        ${DB.policies.map(p=>`
+          <div class="card" style="margin-bottom:0.8rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-weight:700;font-size:0.95rem;color:var(--crimson-dark);">${p.title}</div>
+                <div style="font-size:0.78rem;color:var(--muted);margin-top:0.2rem;">ID: ${p.id} · Published: ${p.date}</div>
+              </div>
+              <div style="display:flex;gap:0.5rem;align-items:center;">
+                <span class="badge ${p.status==='Active'?'green':'amber'}">${p.status}</span>
+                <button class="btn btn-sm btn-outline">Edit</button>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+function addPolicy() {
+  const title = prompt('Enter policy title:');
+  if (!title) return;
+  DB.policies.unshift({id:'P'+Date.now(),title,date:new Date().toISOString().slice(0,10),status:'Active'});
+  renderPage('admin-policies');
+}
+
+function renderAdminAnalytics(main) {
+  main.innerHTML = `
+    <div class="page active">
+      <div class="page-title">System Analytics</div>
+      <div class="page-sub">Platform-wide performance and health metrics.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">30%</div><div class="stat-lbl">Operational Efficiency Boost</div><div class="stat-trend up">↑ vs baseline</div></div>
+        <div class="stat-card"><div class="stat-num">20%</div><div class="stat-lbl">Patient Satisfaction</div><div class="stat-trend up">↑ improvement</div></div>
+        <div class="stat-card"><div class="stat-num">100%</div><div class="stat-lbl">Digital Adoption</div><div class="stat-trend up">↑ survey support</div></div>
+        <div class="stat-card"><div class="stat-num">0</div><div class="stat-lbl">Security Breaches</div><div class="stat-trend up">✓ Secure</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Survey Data (n=8)</div>
+          ${[['Have Health Issues','87.5%',88,'warn'],['Lost Medical Records','75%',75,'warn'],['Medicine Access Problem','62.5%',63,'amber'],['Support Digital Solution','100%',100,'ok']].map(([n,v,p,s])=>`<div class="metric-row"><div class="metric-name">${n}</div><div class="metric-bar-wrap"><div class="metric-bar ${s}" style="width:${p}%"></div></div><div class="metric-val">${v}</div></div>`).join('')}
+        </div>
+        <div class="card">
+          <div class="card-title">AI Module Performance</div>
+          ${[['Report Analyzer','Operational'],['Health Chatbot','Operational'],['Risk Predictor','Operational'],['Health Insights','Operational'],['QR Code System','Operational'],['OTP Authentication','Operational']].map(([n,s])=>`<div class="metric-row"><div class="metric-name">${n}</div><span class="badge green">${s}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// CLAUDE API
+// ============================================================
+let MEDCARD_API_KEY = localStorage.getItem('medcard_api_key') || '';
+
+function getOfflineFallback(question) {
+  const pt = currentUser;
+  const name = pt.name.split(' ')[0];
+  const conditions = (pt.conditions||[]).join(', ') || 'no recorded conditions';
+  const allergies = pt.allergies || 'none recorded';
+  const blood = pt.blood || 'unknown';
+  const reports = pt.reports || [];
+  const abnormal = reports.filter(r => r.status === 'Abnormal' || r.status === 'Review');
+  const appts = pt.appointments || [];
+
+  const q = question.toLowerCase();
+
+  if (q.includes('recent') && q.includes('report')) {
+    if (!reports.length) return `Hi ${name}! 📋 You currently have no medical reports on file. Once your doctor uploads reports, I'll be able to summarize them for you. Visit the <b>My Reports</b> section to upload or view reports.`;
+    return `📋 <b>Your Recent Medical Reports, ${name}:</b><br><br>${reports.slice(0,3).map(r=>`• <b>${r.name}</b> (${r.date})<br>  Type: ${r.type} | Status: <b style="color:${r.status==='Normal'?'green':r.status==='Abnormal'?'red':'orange'}">${r.status}</b><br>  Notes: ${r.notes}`).join('<br><br>')}<br><br>⚠️ <i>Always consult your doctor for a final interpretation of these results.</i>`;
+  }
+  if (q.includes('abnormal') || q.includes('flagged')) {
+    if (!abnormal.length) return `✅ <b>Great news, ${name}!</b><br><br>None of your reports are flagged as abnormal. All ${reports.length} report(s) on file appear to be within normal ranges. Keep up your regular health checkups!`;
+    return `⚠️ <b>Flagged Reports for ${name}:</b><br><br>${abnormal.map(r=>`🔴 <b>${r.name}</b> (${r.date})<br>Status: <b style="color:red">${r.status}</b><br>Notes: ${r.notes}`).join('<br><br>')}<br><br>Please consult your doctor regarding these reports at your earliest convenience.`;
+  }
+  if (q.includes('summary') && (q.includes('health') || q.includes('history'))) {
+    return `📊 <b>Health Summary for ${name}:</b><br><br>🩸 Blood Type: <b>${blood}</b><br>🏥 Known Conditions: <b>${conditions}</b><br>⚠️ Allergies: <b>${allergies}</b><br>📋 Total Reports: <b>${reports.length}</b> (${abnormal.length} flagged)<br>📅 Appointments: <b>${appts.length} upcoming</b><br><br>Your profile is ${reports.length>0?'active with medical history on file':'new — no reports uploaded yet'}. Regular checkups are recommended every 6 months.`;
+  }
+  if (q.includes('health risk') || q.includes('any risk')) {
+    const hasConditions = (pt.conditions||[]).length > 0;
+    return `⚠️ <b>Health Risk Overview for ${name}:</b><br><br>${hasConditions ? `Based on your conditions (<b>${conditions}</b>), you should monitor related risk factors regularly.` : 'No major risk conditions are currently on record.'}<br><br>• 🔴 Abnormal reports: <b>${abnormal.length}</b> require follow-up<br>• 🩸 Blood type <b>${blood}</b> — relevant for transfusions & surgeries<br>• ⚠️ Allergies: <b>${allergies}</b> — always inform your doctor<br><br>👉 Use the <b>Risk Predictor</b> tool in the sidebar for a full AI risk analysis. Always consult your doctor for personalized risk assessment.`;
+  }
+  if (q.includes('symptom')) {
+    return `🔍 <b>Symptoms to Watch for ${name}:</b><br><br>Based on your profile (conditions: <b>${conditions}</b>), watch out for:<br><br>• Any sudden or worsening pain<br>• Unexplained fatigue or weakness<br>• Changes in appetite or weight<br>• Irregular heartbeat or breathing difficulty<br>• Any allergic reactions — you are allergic to: <b>${allergies}</b><br><br>⚠️ If you experience severe symptoms, seek emergency medical care immediately. Schedule a follow-up with your doctor for routine concerns.`;
+  }
+  if (q.includes('serious disease') || q.includes('at risk')) {
+    return `🩺 <b>Disease Risk Assessment for ${name}:</b><br><br>Based on your recorded conditions (<b>${conditions}</b>) and ${reports.length} report(s):<br><br>• Regular screening is important for early detection<br>• ${abnormal.length > 0 ? `${abnormal.length} abnormal report(s) require medical attention` : 'No abnormal reports currently flagged'}<br>• Maintain regular doctor visits every 6 months<br><br>For a detailed AI-powered risk prediction, please use the <b>⚠️ Risk Predictor</b> in your sidebar. This provides a full risk score and recommendations.`;
+  }
+  if (q.includes('how serious') && q.includes('condition')) {
+    if (!(pt.conditions||[]).length) return `✅ <b>Good news, ${name}!</b> No major medical conditions are currently recorded in your profile. Keep maintaining a healthy lifestyle with regular checkups!`;
+    return `🏥 <b>Your Conditions: ${conditions}</b><br><br>Each condition varies in severity. Here's what's important:<br><br>• Follow your doctor's prescribed treatment plan<br>• Take medications as directed<br>• Monitor symptoms and report changes<br>• Maintain a healthy diet and exercise routine<br>• Avoid: <b>${allergies}</b><br><br>⚠️ Please consult your treating physician for the exact severity and management plan for your conditions.`;
+  }
+  if (q.includes('medication') && q.includes('avoid')) {
+    return `💊 <b>Medications to Be Careful About, ${name}:</b><br><br>⚠️ <b>Known Allergies:</b> <b style="color:red">${allergies}</b> — avoid all medications containing these.<br><br>Based on your conditions (<b>${conditions}</b>):<br>• Always inform any doctor or pharmacist about your full conditions list<br>• Never take someone else's prescription medications<br>• Always check medication labels for allergens<br><br>🔴 <b>Important:</b> This is general guidance only. Your doctor must prescribe and approve all medications for your specific case.`;
+  }
+  if (q.includes('drug interaction')) {
+    return `⚠️ <b>Drug Interaction Awareness for ${name}:</b><br><br>General drug interaction rules:<br><br>• 🔴 Never mix medications without doctor approval<br>• ⚠️ Always tell your pharmacist ALL medications you're taking<br>• 🚫 Avoid alcohol with most prescription drugs<br>• 💊 Some supplements (like St. John's Wort, Ginkgo) interact with common medicines<br><br>Your allergies (<b>${allergies}</b>) are also important to mention every time.<br><br>Please consult your doctor or a pharmacist for a personalized interaction check.`;
+  }
+  if (q.includes('over-the-counter') || q.includes('otc') || q.includes('safe for me')) {
+    return `💊 <b>OTC Medication Safety for ${name}:</b><br><br>Generally safe for most people, but check with your doctor given your conditions (<b>${conditions}</b>):<br><br>• ✅ Paracetamol/Acetaminophen — for fever & mild pain<br>• ⚠️ Ibuprofen/NSAIDs — use with caution if you have stomach or kidney issues<br>• ✅ Antacids — for acidity (check for allergens)<br>• ✅ ORS — for dehydration<br><br>🔴 Always avoid anything containing your known allergens: <b>${allergies}</b><br><br>Consult your pharmacist before taking any new OTC medicine.`;
+  }
+  if (q.includes('diet')) {
+    return `🥗 <b>Diet Recommendations for ${name}:</b><br><br>Based on your profile (conditions: <b>${conditions}</b>):<br><br>✅ <b>Include:</b><br>• Fresh fruits and vegetables (5 servings/day)<br>• Whole grains (brown rice, oats, whole wheat)<br>• Lean proteins (fish, legumes, low-fat dairy)<br>• Plenty of water (8–10 glasses/day)<br><br>🚫 <b>Limit:</b><br>• Processed and fried foods<br>• Excess sugar and salt<br>• Alcohol and carbonated drinks<br><br>⚠️ Avoid foods containing your allergens: <b>${allergies}</b><br><br>For a personalized diet plan, consult a registered dietitian.`;
+  }
+  if (q.includes('exercise')) {
+    return `🏃 <b>Exercise Recommendations for ${name}:</b><br><br>Safe exercises for most people with conditions like <b>${conditions}</b>:<br><br>✅ <b>Recommended:</b><br>• 30 min brisk walking daily<br>• Light yoga or stretching (3x/week)<br>• Swimming — low impact, full body<br>• Breathing exercises / meditation<br><br>⚠️ <b>Start slow</b> if you haven't exercised recently<br>🔴 <b>Stop immediately</b> if you feel chest pain, dizziness, or shortness of breath<br><br>Always get your doctor's clearance before starting a new exercise program.`;
+  }
+  if (q.includes('lifestyle')) {
+    return `🌟 <b>Lifestyle Recommendations for ${name}:</b><br><br>Key changes to improve your health:<br><br>1. 😴 <b>Sleep:</b> 7–8 hours per night consistently<br>2. 🥗 <b>Diet:</b> Balanced meals, avoid junk food<br>3. 🏃 <b>Exercise:</b> 30 min activity daily<br>4. 🚭 <b>Avoid:</b> Smoking and excess alcohol<br>5. 💧 <b>Hydration:</b> 8+ glasses of water daily<br>6. 🧘 <b>Stress:</b> Practice mindfulness or yoga<br>7. 🏥 <b>Checkups:</b> Visit your doctor every 6 months<br><br>Small consistent changes lead to big health improvements over time!`;
+  }
+  if (q.includes('appointment') && (q.includes('next') || q.includes('prepare'))) {
+    if (!appts.length) return `📅 <b>No Upcoming Appointments, ${name}</b><br><br>You don't have any appointments scheduled yet. Visit the <b>Appointments</b> section in the sidebar to book one.<br><br>💡 <b>Tips to prepare for any appointment:</b><br>• Write down your current symptoms<br>• Bring your MedCard / E-Card<br>• List all current medications<br>• Note any recent changes in health`;
+    const next = appts[0];
+    return `📅 <b>Your Next Appointment:</b><br><br>🗓 <b>${next.specialty}</b> with <b>${next.doctor}</b><br>📆 Date: <b>${next.day} ${next.month}</b><br><br>✅ <b>How to Prepare:</b><br>• Fast if required (ask your doctor)<br>• Bring your MedCard E-Card for quick record access<br>• Note any new symptoms since your last visit<br>• List all current medications<br>• Prepare questions you want to ask`;
+  }
+  if (q.includes('specialist') || q.includes('which doctor')) {
+    return `👨‍⚕️ <b>Specialist Recommendation for ${name}:</b><br><br>Based on your conditions (<b>${conditions}</b>) and ${abnormal.length} flagged report(s):<br><br>${abnormal.length>0?`🔴 Priority: Follow up with the doctor who ordered your abnormal reports<br><br>`:''}General recommendations:<br>• 🏥 <b>General Physician</b> — for routine checkups and referrals<br>• ❤️ <b>Cardiologist</b> — if any heart-related concerns<br>• 🧪 <b>Pathologist review</b> — for abnormal lab results<br><br>Use the <b>Appointments</b> section to book your visit.`;
+  }
+  if (q.includes('checkup') || q.includes('screening')) {
+    return `🩺 <b>Recommended Health Checkups for ${name}:</b><br><br>Based on your profile, consider these screenings:<br><br>✅ <b>Every 6 months:</b><br>• Complete Blood Count (CBC)<br>• Blood pressure check<br>• Blood sugar (fasting glucose)<br><br>✅ <b>Annually:</b><br>• Lipid profile (cholesterol)<br>• Kidney & liver function tests<br>• Eye and dental checkup<br><br>✅ <b>Based on conditions (${conditions}):</b><br>• Any condition-specific tests as advised by your doctor<br><br>📅 Book your next checkup in the <b>Appointments</b> section!`;
+  }
+
+  // Default fallback
+  return `🤖 <b>MedCard AI Response for ${name}:</b><br><br>I understand you're asking about: <i>"${question}"</i><br><br>Based on your profile:<br>• Blood type: <b>${blood}</b><br>• Conditions: <b>${conditions}</b><br>• Allergies: <b>${allergies}</b><br>• Reports on file: <b>${reports.length}</b><br><br>For the most accurate and personalized answer, please consult your doctor. You can also book an appointment through the <b>Appointments</b> section.<br><br>⚠️ <i>MedCard AI provides general health guidance only and does not replace professional medical advice.</i>`;
+}
+
+async function callClaudeAPI(userMessage, systemPrompt, conversationHistory=[]) {
+  const key = MEDCARD_API_KEY || localStorage.getItem('medcard_api_key') || '';
+  if (!key) throw new Error('NO_API_KEY');
+
+  const messages = [...conversationHistory];
+  if (!messages.length || messages[messages.length-1].role!=='user') {
+    messages.push({role:'user',content:userMessage});
+  }
+  const body = {
+    model:'claude-sonnet-4-20250514',
+    max_tokens:1000,
+    system: systemPrompt||'You are MedCard AI, an intelligent medical assistant for the AI Integrated Medical E-Card platform. Be helpful, concise, and health-literate.',
+    messages
+  };
+  const response = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify(body)
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(()=>({}));
+    throw new Error(err.error?.message || 'API error '+response.status);
+  }
+  const data = await response.json();
+  return data.content.map(b=>b.text||'').join('');
+}
+</script>
+
+<!-- ========== EMBEDDED QR REPORTS PAGE ========== -->
+<div id="qr-reports-page" style="display:none;position:fixed;inset:0;z-index:9999;overflow-y:auto;background:#FAF5EE;">
+<style>
+#qr-reports-page *{box-sizing:border-box;}
+#qr-reports-page .qrp-top{background:#4A0E1A;padding:1rem 1.4rem;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+#qr-reports-page .qrp-logo{color:#D4802A;font-family:'Playfair Display',serif;font-weight:900;font-size:1.2rem;}
+#qr-reports-page .qrp-back{background:rgba(212,128,42,0.2);border:1px solid rgba(212,128,42,0.4);color:#D4802A;padding:.3rem .9rem;border-radius:20px;font-size:.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;}
+#qr-reports-page .qrp-hero{background:linear-gradient(135deg,#6B1525,#3A0A14);padding:2rem 1.2rem;text-align:center;position:relative;overflow:hidden;}
+#qr-reports-page .qrp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 60% 40%,rgba(212,128,42,0.18) 0%,transparent 60%);}
+#qr-reports-page .qrp-hero-icon{font-size:2.5rem;position:relative;z-index:2;}
+#qr-reports-page .qrp-hero h1{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:#fff;margin:.5rem 0;position:relative;z-index:2;}
+#qr-reports-page .qrp-hero p{color:rgba(250,245,238,.65);font-size:.82rem;position:relative;z-index:2;}
+#qr-reports-page .qrp-alert{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);border-radius:8px;padding:.7rem 1rem;margin:.9rem auto 0;max-width:480px;font-size:.76rem;color:rgba(250,245,238,.85);position:relative;z-index:2;}
+#qr-reports-page .qrp-c{max-width:720px;margin:0 auto;padding:1.5rem 1rem;}
+#qr-reports-page .qrp-chips{display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1.4rem;}
+#qr-reports-page .qrp-chip{background:#fff;border:1px solid #F0E8DC;border-radius:10px;padding:.8rem 1rem;flex:1;min-width:80px;text-align:center;box-shadow:0 2px 8px rgba(74,14,26,.04);}
+#qr-reports-page .qrp-chip-n{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:900;color:#4A0E1A;}
+#qr-reports-page .qrp-chip-l{font-size:.65rem;color:#8A7070;margin-top:.1rem;}
+#qr-reports-page .qrp-st{font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:#4A0E1A;margin-bottom:.2rem;}
+#qr-reports-page .qrp-ss{font-size:.8rem;color:#8A7070;margin-bottom:1.2rem;}
+#qr-reports-page .qrp-rc{background:#fff;border-radius:12px;border:1px solid #F0E8DC;padding:1.2rem;margin-bottom:.9rem;box-shadow:0 2px 10px rgba(74,14,26,.06);transition:box-shadow .2s;}
+#qr-reports-page .qrp-rc:hover{box-shadow:0 6px 24px rgba(74,14,26,.12);}
+#qr-reports-page .qrp-rh{display:flex;gap:.9rem;align-items:flex-start;}
+#qr-reports-page .qrp-ri{width:46px;height:46px;border-radius:11px;background:rgba(212,128,42,.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+#qr-reports-page .qrp-rb{flex:1;}
+#qr-reports-page .qrp-rn{font-weight:700;font-size:.95rem;color:#4A0E1A;margin-bottom:.2rem;}
+#qr-reports-page .qrp-rm{font-size:.74rem;color:#8A7070;margin-bottom:.5rem;display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;}
+#qr-reports-page .qrp-bdg{display:inline-block;padding:.18rem .65rem;border-radius:20px;font-size:.62rem;font-weight:700;letter-spacing:.04em;}
+#qr-reports-page .qrp-bdg.g{background:rgba(45,122,79,.1);color:#2D7A4F;}
+#qr-reports-page .qrp-bdg.a{background:rgba(212,128,42,.1);color:#D4802A;}
+#qr-reports-page .qrp-bdg.r{background:rgba(192,57,43,.1);color:#C0392B;}
+#qr-reports-page .qrp-rnt{font-size:.8rem;line-height:1.6;color:#333;background:#FAF5EE;padding:.65rem .8rem;border-radius:8px;}
+#qr-reports-page .qrp-exp{background:none;border:1.5px solid #F0E8DC;border-radius:6px;font-size:.72rem;font-weight:600;padding:.35rem .85rem;cursor:pointer;color:#4A0E1A;font-family:'DM Sans',sans-serif;margin-top:.65rem;transition:all .15s;}
+#qr-reports-page .qrp-exp:hover{border-color:#D4802A;color:#D4802A;}
+#qr-reports-page .qrp-dp{display:none;margin-top:.75rem;border-top:1px solid #F0E8DC;padding-top:.8rem;}
+#qr-reports-page .qrp-dg{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.7rem;}
+#qr-reports-page .qrp-di{background:#FAF5EE;border-radius:7px;padding:.55rem .8rem;}
+#qr-reports-page .qrp-dl{font-family:'DM Mono',monospace;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:#8A7070;margin-bottom:.18rem;}
+#qr-reports-page .qrp-dv{font-size:.85rem;font-weight:600;color:#4A0E1A;}
+#qr-reports-page .qrp-ft{text-align:center;padding:2rem 1rem;border-top:1px solid #F0E8DC;margin-top:.5rem;font-size:.74rem;color:#8A7070;}
+</style>
+
+<div class="qrp-top">
+  <div class="qrp-logo">MedCard AI</div>
+  <button class="qrp-back" onclick="closeQRReports()">✕ Close</button>
+</div>
+
+<div class="qrp-hero">
+  <div class="qrp-hero-icon">🏥</div>
+  <h1>Medical Reports Viewer</h1>
+  <p>Silver Oak University · MedCard AI Platform 2026</p>
+  <div class="qrp-alert">🔒 <strong>Emergency QR Access</strong> — Anonymized reports. No personal identifiers shown. Authorized medical staff only.</div>
+</div>
+
+<div class="qrp-c">
+  <div class="qrp-chips">
+    <div class="qrp-chip"><div class="qrp-chip-n">7</div><div class="qrp-chip-l">Total</div></div>
+    <div class="qrp-chip"><div class="qrp-chip-n" style="color:#C0392B">2</div><div class="qrp-chip-l">Abnormal</div></div>
+    <div class="qrp-chip"><div class="qrp-chip-n" style="color:#D4802A">1</div><div class="qrp-chip-l">Review</div></div>
+    <div class="qrp-chip"><div class="qrp-chip-n" style="color:#2D7A4F">4</div><div class="qrp-chip-l">Normal</div></div>
+  </div>
+
+  <div class="qrp-st">Patient Medical Reports</div>
+  <div class="qrp-ss">All reports from MedCard AI — displayed without personal identifiers per emergency access protocol.</div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">🧪</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Complete Blood Count (CBC)</div>
+        <div class="qrp-rm"><span>10 Mar 2026</span><span>Lab / Hematology</span><span class="qrp-bdg g">Normal</span></div>
+        <div class="qrp-rnt">Hemoglobin 13.2 g/dL, WBC 7,400/µL, Platelets 2.1L/µL — all within normal range. No anemia or infection detected.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Hemoglobin</div><div class="qrp-dv">13.2 g/dL ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">WBC Count</div><div class="qrp-dv">7,400 /µL ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Platelets</div><div class="qrp-dv">2.1 Lakh ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Neutrophils</div><div class="qrp-dv">58% ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Hematocrit</div><div class="qrp-dv">39.8% ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">MCV</div><div class="qrp-dv">86.4 fL ✓</div></div>
+          </div>
+          <div class="qrp-rnt"><strong>Conclusion:</strong> All parameters within reference range. Repeat as routine screening in 6 months.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">❤️</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">12-Lead ECG Report</div>
+        <div class="qrp-rm"><span>18 Feb 2026</span><span>Cardiac</span><span class="qrp-bdg g">Normal</span></div>
+        <div class="qrp-rnt">Sinus rhythm 74 bpm. PR 162ms, QRS 88ms, QTc 410ms — all normal. No ST changes or ischemic pattern.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Heart Rate</div><div class="qrp-dv">74 bpm ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Rhythm</div><div class="qrp-dv">Normal Sinus ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">QTc Interval</div><div class="qrp-dv">410 ms ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">QRS Duration</div><div class="qrp-dv">88 ms ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">PR Interval</div><div class="qrp-dv">162 ms ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Axis</div><div class="qrp-dv">Normal ✓</div></div>
+          </div>
+          <div class="qrp-rnt"><strong>Conclusion:</strong> Normal ECG. No arrhythmia, bundle branch block, or myocardial ischemia detected.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">🩻</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Chest X-Ray (PA View)</div>
+        <div class="qrp-rm"><span>22 Jan 2026</span><span>Radiology</span><span class="qrp-bdg a">Under Review</span></div>
+        <div class="qrp-rnt">Mild consolidation right lower lobe. Cardiac silhouette normal. No pleural effusion. Follow-up recommended.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Lungs</div><div class="qrp-dv" style="color:#D4802A">Consolidation ⚠</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Cardiac</div><div class="qrp-dv">Normal ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Pleura</div><div class="qrp-dv">No Effusion ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Follow-up</div><div class="qrp-dv" style="color:#D4802A">4–6 weeks ⚠</div></div>
+          </div>
+          <div class="qrp-rnt" style="border-left:3px solid #D4802A;padding-left:.7rem"><strong>⚠ Radiologist Note:</strong> Mild RLL consolidation — may be pneumonitis or atelectasis. Clinical correlation advised. Follow-up X-ray recommended.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">🫁</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Spirometry / Pulmonary Function Test</div>
+        <div class="qrp-rm"><span>01 Mar 2026</span><span>Pulmonology</span><span class="qrp-bdg r">Abnormal</span></div>
+        <div class="qrp-rnt">FEV1 72% predicted. FEV1/FVC 0.68 — mild obstructive pattern. Consistent with asthma/early COPD.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">FEV1</div><div class="qrp-dv" style="color:#C0392B">72% ✗</div></div>
+            <div class="qrp-di"><div class="qrp-dl">FVC</div><div class="qrp-dv">84% ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">FEV1/FVC</div><div class="qrp-dv" style="color:#C0392B">0.68 ✗</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Pattern</div><div class="qrp-dv" style="color:#C0392B">Obstructive ✗</div></div>
+          </div>
+          <div class="qrp-rnt" style="border-left:3px solid #C0392B;padding-left:.7rem"><strong>🔴 Clinical Note:</strong> Obstructive airways disease. Bronchodilator reversibility test recommended. Review asthma management plan.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">🌿</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Allergy Panel — IgE Serology</div>
+        <div class="qrp-rm"><span>10 Feb 2026</span><span>Immunology</span><span class="qrp-bdg g">Normal</span></div>
+        <div class="qrp-rnt">IgE elevated for dust mites (Class 3) and pollen (Class 2). Penicillin allergy confirmed via skin test.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Total IgE</div><div class="qrp-dv" style="color:#D4802A">142 IU/mL ⚠</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Dust Mite</div><div class="qrp-dv" style="color:#D4802A">Class 3 ⚠</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Penicillin</div><div class="qrp-dv" style="color:#C0392B">Positive ✗ ALERT</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Food</div><div class="qrp-dv">Negative ✓</div></div>
+          </div>
+          <div class="qrp-rnt" style="border-left:3px solid #C0392B;padding-left:.7rem"><strong>🚨 ALLERGY ALERT:</strong> Confirmed Penicillin allergy. Avoid all Penicillin-class antibiotics and cross-reactive cephalosporins.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">🩸</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Lipid Profile Panel</div>
+        <div class="qrp-rm"><span>14 Jan 2026</span><span>Biochemistry</span><span class="qrp-bdg r">Abnormal</span></div>
+        <div class="qrp-rnt">Total cholesterol 224 mg/dL, LDL 148 mg/dL (high), HDL 42 mg/dL (low). Cardiovascular risk elevated.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Total Cholesterol</div><div class="qrp-dv" style="color:#D4802A">224 mg/dL ⚠</div></div>
+            <div class="qrp-di"><div class="qrp-dl">LDL</div><div class="qrp-dv" style="color:#C0392B">148 mg/dL ✗</div></div>
+            <div class="qrp-di"><div class="qrp-dl">HDL</div><div class="qrp-dv" style="color:#D4802A">42 mg/dL ⚠</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Triglycerides</div><div class="qrp-dv" style="color:#D4802A">188 mg/dL ⚠</div></div>
+          </div>
+          <div class="qrp-rnt" style="border-left:3px solid #C0392B;padding-left:.7rem"><strong>🔴 Note:</strong> Dyslipidemia. Lifestyle modification strongly advised. Consider statin therapy if LDL remains elevated after 3 months.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qrp-rc">
+    <div class="qrp-rh">
+      <div class="qrp-ri">💉</div>
+      <div class="qrp-rb">
+        <div class="qrp-rn">Fasting Glucose & HbA1c</div>
+        <div class="qrp-rm"><span>05 Mar 2026</span><span>Endocrinology</span><span class="qrp-bdg g">Normal</span></div>
+        <div class="qrp-rnt">Fasting glucose 5.1 mmol/L, HbA1c 5.4% — well within non-diabetic range. No insulin resistance.</div>
+        <button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+        <div class="qrp-dp">
+          <div class="qrp-dg">
+            <div class="qrp-di"><div class="qrp-dl">Fasting Glucose</div><div class="qrp-dv">5.1 mmol/L ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">HbA1c</div><div class="qrp-dv">5.4% ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Fasting Insulin</div><div class="qrp-dv">8.2 µIU/mL ✓</div></div>
+            <div class="qrp-di"><div class="qrp-dl">Status</div><div class="qrp-dv" style="color:#2D7A4F">Non-Diabetic ✓</div></div>
+          </div>
+          <div class="qrp-rnt"><strong>Conclusion:</strong> Excellent glycaemic control. No diabetes or pre-diabetes. Repeat HbA1c annually.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="qrp-ft">
+  <strong>MedCard AI</strong> · Silver Oak University · Project Fair 2026<br>
+  Emergency QR Access Mode · Authorized Personnel Only
+</div>
+</div>
+
+<script>
+// Hash-based QR router
+function openQRReports() {
+  document.getElementById('qr-reports-page').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+function closeQRReports() {
+  document.getElementById('qr-reports-page').style.display = 'none';
+  document.body.style.overflow = '';
+  history.replaceState(null, '', window.location.pathname);
+}
+function qrpToggle(btn) {
+  var dp = btn.nextElementSibling;
+  var open = dp.style.display === 'block';
+  dp.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '▼ View Full Report' : '▲ Close Report';
+}
+// Check hash on load and on hashchange
+function checkHash() {
+  if (window.location.hash === '#qr-reports') openQRReports();
+}
+window.addEventListener('hashchange', checkHash);
+window.addEventListener('load', checkHash);
+</script>
+
+</body>
+</html>
