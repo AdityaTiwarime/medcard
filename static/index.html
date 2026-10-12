@@ -321,24 +321,25 @@ tr:hover td{background:var(--cream);}
     <div class="auth-title" id="auth-title">Patient Login</div>
     <div class="auth-role-badge" id="auth-role-badge">Patient Portal</div>
     <div id="auth-login-form">
-      <div class="demo-creds">
-        <strong>Demo credentials:</strong><br>
-        Patient — ID: <strong>2507070000057</strong> or <strong>2507070000080</strong><br>
-        OTP: <strong>123456</strong> (all portals)
-      </div>
+      <div class="demo-creds" id="demo-creds"></div>
       <div class="form-group">
         <label class="form-label">Full Name</label>
         <input class="form-input" id="auth-name" placeholder="e.g. Riya Jain" />
       </div>
       <div class="form-group">
-        <label class="form-label">Patient ID / Email</label>
-        <input class="form-input" id="auth-id" placeholder="e.g. 2507070000057" />
+        <label class="form-label" id="auth-id-label">Patient ID / Email</label>
+        <input class="form-input" id="auth-id" placeholder="e.g. 2507070000057" autocomplete="username" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="auth-password" type="password" placeholder="Your password" autocomplete="current-password" />
       </div>
       <div class="form-group">
         <label class="form-label">OTP (demo: use 123456)</label>
-        <input class="form-input" id="auth-otp" placeholder="6-digit OTP" maxlength="6" />
+        <input class="form-input" id="auth-otp" placeholder="6-digit OTP" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')doLogin()" />
         <div class="otp-hint">📱 In production, OTP is sent to your registered mobile number.</div>
       </div>
+      <div id="auth-error" class="otp-hint" style="color:var(--red);display:none;"></div>
       <button class="btn-submit" id="auth-submit-btn" onclick="doLogin()">Login Securely</button>
       <div class="auth-switch" id="auth-switch">New patient? <a onclick="toggleRegister()">Register here</a></div>
     </div>
@@ -354,7 +355,13 @@ tr:hover td{background:var(--cream);}
         </div>
         <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="reg-phone" placeholder="+91 98765 00000" /></div>
       </div>
-      <button class="btn-submit" onclick="doRegister()">Create Account</button>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="reg-email" type="email" placeholder="you@example.com" autocomplete="email" /></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="reg-password" type="password" placeholder="Min 6 characters" autocomplete="new-password" /></div>
+        <div class="form-group"><label class="form-label">Allergies</label><input class="form-input" id="reg-allergies" placeholder="e.g. Penicillin, or None" /></div>
+      </div>
+      <div id="reg-error" class="otp-hint" style="color:var(--red);display:none;"></div>
+      <button class="btn-submit" id="reg-submit-btn" onclick="doRegister()">Create Account</button>
       <div class="auth-switch">Already registered? <a onclick="toggleRegister()">Login here</a></div>
     </div>
   </div>
@@ -386,33 +393,58 @@ let currentUser = null;
 let currentRole = null;
 let chatHistory = [];
 
-const DB = {
-  patients: [
-    { id:'2507070000057', name:'Riya Jain', dob:'1999-03-15', blood:'O+', phone:'+91 98765 00057', allergies:'None', conditions:['Hypertension'], reports:[
-      {id:'R001', name:'Blood Count Report', date:'2026-03-10', type:'Lab', status:'Normal', notes:'Hemoglobin 13.2 g/dL, WBC normal range'},
-      {id:'R002', name:'ECG Report', date:'2026-02-18', type:'Cardiac', status:'Normal', notes:'Sinus rhythm, no abnormalities detected'},
-      {id:'R003', name:'Chest X-Ray', date:'2026-01-22', type:'Radiology', status:'Review', notes:'Mild consolidation in right lower lobe'},
-    ], appointments:[
-      {id:'A001', date:'2026-04-05', month:'APR', day:'05', doctor:'Dr. Mehta', specialty:'Cardiology', status:'Upcoming'},
-      {id:'A002', date:'2026-04-15', month:'APR', day:'15', doctor:'Dr. Shah', specialty:'General', status:'Upcoming'},
-    ]},
-    { id:'2507070000080', name:'Diya Jain', dob:'2001-07-22', blood:'A+', phone:'+91 98765 00080', allergies:'Penicillin', conditions:['Asthma','Allergies'], reports:[
-      {id:'R004', name:'Spirometry Test', date:'2026-03-01', type:'Pulmonology', status:'Abnormal', notes:'FEV1 reduced to 72%, mild obstruction'},
-      {id:'R005', name:'Allergy Panel', date:'2026-02-10', type:'Allergy', status:'Normal', notes:'Positive for dust mites and pollen'},
-    ], appointments:[
-      {id:'A003', date:'2026-04-08', month:'APR', day:'08', doctor:'Dr. Rao', specialty:'Pulmonology', status:'Upcoming'},
-    ]},
-  ],
-  doctors: [
-    { id:'DR001', name:'Dr. Priya Mehta', specialty:'Cardiology', phone:'+91 98000 11001' },
-    { id:'DR002', name:'Dr. Amit Shah', specialty:'General Medicine', phone:'+91 98000 11002' },
-  ],
-  policies: [
-    { id:'P001', title:'HIPAA Compliance Update 2026', date:'2026-03-01', status:'Active' },
-    { id:'P002', title:'Telemedicine Service Guidelines', date:'2026-02-15', status:'Active' },
-    { id:'P003', title:'Emergency Data Access Protocol', date:'2026-01-10', status:'Under Review' },
-  ]
+const DB = { patients: [], doctors: [], policies: [] };   // filled from /api/bootstrap after login
+let AI_MODE = 'offline';
+
+function escHtml(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Optional personal AI key typed in the chat box. Kept in this browser only, sent to our server per request, never stored there.
+let MEDCARD_API_KEY = (() => { try { return localStorage.getItem('medcard_api_key') || ''; } catch (e) { return ''; } })();
+function saveApiKey(v) {
+  MEDCARD_API_KEY = (v || '').trim();
+  try { localStorage.setItem('medcard_api_key', MEDCARD_API_KEY); } catch (e) {}
+  const lbl = document.getElementById('chat-status-label');
+  if (lbl) lbl.textContent = aiLive() ? 'LIVE AI MODE · ONLINE' : 'OFFLINE MODE · ADD API KEY FOR LIVE AI';
+}
+function aiLive() { return !!MEDCARD_API_KEY || AI_MODE !== 'offline'; }
+
+const API = {
+  token: (() => { try { return localStorage.getItem('medcard_token'); } catch (e) { return null; } })(),
+  setToken(t) {
+    this.token = t;
+    try { t ? localStorage.setItem('medcard_token', t) : localStorage.removeItem('medcard_token'); } catch (e) {}
+  },
+  async req(path, { method = 'GET', body, form } = {}) {
+    const headers = {};
+    if (this.token) headers.Authorization = 'Bearer ' + this.token;
+    if (MEDCARD_API_KEY) headers['X-AI-Key'] = MEDCARD_API_KEY;
+    let payload;
+    if (form) payload = form;
+    else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
+    let res;
+    try { res = await fetch(path, { method, headers, body: payload }); }
+    catch (e) { const err = new Error('Cannot reach the server. Check your connection.'); err.status = 0; throw err; }
+    let data = null;
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) {
+      const d = data && data.detail;
+      const msg = typeof d === 'string' ? d : Array.isArray(d) ? d.map(x => x.msg.replace(/^Value error, /, '')).join(', ') : 'Error ' + res.status;
+      const err = new Error(msg); err.status = res.status;
+      if (res.status === 401 && !path.startsWith('/api/auth/')) {
+        this.setToken(null);
+        if (currentUser) { logout(); alert('Your session expired. Please log in again.'); }
+      }
+      throw err;
+    }
+    return data;
+  }
 };
+
+async function loadData() {
+  const d = await API.req('/api/bootstrap');
+  DB.patients = d.patients; DB.doctors = d.doctors; DB.policies = d.policies;
+  currentRole = d.role; currentUser = d.user; AI_MODE = d.ai;
+}
 
 // ============================================================
 // AUTH
@@ -425,6 +457,16 @@ function openAuth(role) {
   document.getElementById('auth-title').textContent = titles[role];
   document.getElementById('auth-role-badge').textContent = badges[role];
   document.getElementById('auth-switch').style.display = role==='patient' ? 'block' : 'none';
+  const idLabels = { patient:['Patient ID / Email','e.g. 2507070000057'], doctor:['Doctor ID / Email','e.g. DR001'], admin:['Admin Email / ID','e.g. admin@medcard.ai'] };
+  document.getElementById('auth-id-label').textContent = idLabels[role][0];
+  document.getElementById('auth-id').placeholder = idLabels[role][1];
+  const demo = { patient:'Patient — ID: <strong>2507070000057</strong> or <strong>2507070000080</strong>',
+                 doctor:'Doctor ID <strong>DR001</strong>, <strong>DR002</strong> or <strong>DR003</strong>',
+                 admin:'Email <strong>admin@medcard.ai</strong>' };
+  document.getElementById('demo-creds').innerHTML = '<strong>Demo credentials:</strong><br>' + demo[role] + '<br>Password: <strong>Demo@123</strong> · OTP: <strong>123456</strong> (all portals)';
+  document.getElementById('auth-login-form').style.display = 'block';
+  document.getElementById('auth-register-form').style.display = 'none';
+  showAuthError(''); showAuthError('', 'reg-error');
 }
 function closeAuth() { document.getElementById('auth-overlay').classList.remove('show'); }
 function toggleRegister() {
@@ -433,44 +475,54 @@ function toggleRegister() {
   lf.style.display = lf.style.display==='none' ? 'block' : 'none';
   rf.style.display = rf.style.display==='none' ? 'block' : 'none';
 }
-function doRegister() {
-  const fname = document.getElementById('reg-fname').value.trim();
-  const lname = document.getElementById('reg-lname').value.trim();
-  const dob = document.getElementById('reg-dob').value;
-  const blood = document.getElementById('reg-blood').value;
-  const phone = document.getElementById('reg-phone').value.trim();
-  if (!fname || !lname || !dob) { alert('Please fill required fields.'); return; }
-  const newId = '25070700000' + Math.floor(Math.random()*900+100);
-  const newPt = { id:newId, name:fname+' '+lname, dob, blood, phone, allergies:'None', conditions:[], reports:[], appointments:[] };
-  DB.patients.push(newPt);
-  currentUser = newPt;
-  currentRole = 'patient';
-  bootApp();
+function showAuthError(msg, id = 'auth-error') {
+  const el = document.getElementById(id); if (!el) return;
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
 }
-function doLogin() {
-  const btn = document.getElementById('auth-submit-btn');
-  const otp = document.getElementById('auth-otp').value.trim();
-  if (otp !== '123456') { alert('Invalid OTP. Use demo OTP: 123456'); return; }
-  btn.innerHTML = '<span class="spinner"></span>';
-  btn.disabled = true;
-  setTimeout(() => {
-    btn.innerHTML = 'Login Securely'; btn.disabled = false;
-    if (currentRole === 'patient') {
-      const pid = document.getElementById('auth-id').value.trim();
-      const pt = DB.patients.find(p => p.id===pid || p.name.toLowerCase().includes(pid.toLowerCase()));
-      currentUser = pt || { id:'GUEST001', name:document.getElementById('auth-name').value||'Guest Patient', dob:'2000-01-01', blood:'—', phone:'—', allergies:'None', conditions:[], reports:[], appointments:[] };
-    } else if (currentRole === 'doctor') {
-      currentUser = { name:document.getElementById('auth-name').value||'Dr. Guest', id:'DR999', specialty:'General' };
-    } else {
-      currentUser = { name:'Super Admin', id:'SA001' };
-    }
+async function doRegister() {
+  const v = id => document.getElementById(id).value.trim();
+  const body = { first_name:v('reg-fname'), last_name:v('reg-lname'), dob:v('reg-dob'), blood:v('reg-blood'),
+                 phone:v('reg-phone'), email:v('reg-email'), password:document.getElementById('reg-password').value,
+                 allergies:v('reg-allergies') || 'None' };
+  if (!body.first_name || !body.last_name || !body.dob || !body.email || !body.password) {
+    showAuthError('Please fill name, date of birth, email and password.', 'reg-error'); return;
+  }
+  const btn = document.getElementById('reg-submit-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const r = await API.req('/api/auth/register', { method:'POST', body });
+    API.setToken(r.token);
+    await loadData();
     bootApp();
-  }, 1200);
+    setTimeout(() => alert('Welcome to MedCard AI! Your Patient ID is ' + r.patient_id + '. Log in with it or your email.'), 300);
+  } catch (e) { showAuthError(e.message, 'reg-error'); }
+  finally { btn.disabled = false; btn.innerHTML = 'Create Account'; }
+}
+async function doLogin() {
+  const btn = document.getElementById('auth-submit-btn');
+  const identifier = document.getElementById('auth-id').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const otp = document.getElementById('auth-otp').value.trim();
+  const name = document.getElementById('auth-name').value.trim();
+  if (!identifier || !password) { showAuthError('Enter your ID/email and password.'); return; }
+  if (!otp) { showAuthError('Enter the OTP. Demo OTP: 123456'); return; }
+  btn.innerHTML = '<span class="spinner"></span>'; btn.disabled = true;
+  try {
+    const r = await API.req('/api/auth/login', { method:'POST', body:{ role:currentRole, identifier, password, otp, name } });
+    API.setToken(r.token);
+    await loadData();
+    document.getElementById('auth-password').value = '';
+    document.getElementById('auth-otp').value = '';
+    bootApp();
+  } catch (e) { showAuthError(e.message); }
+  finally { btn.innerHTML = 'Login Securely'; btn.disabled = false; }
 }
 function logout() {
+  API.setToken(null);
   document.getElementById('app').style.display='none';
   document.getElementById('landing').style.display='flex';
   currentUser=null; currentRole=null; chatHistory=[];
+  DB.patients=[]; DB.doctors=[]; DB.policies=[];
 }
 
 // ============================================================
@@ -584,7 +636,7 @@ function renderPage(page) {
 function renderPatientDashboard(main) {
   const pt = currentUser;
   const reports = pt.reports||[];
-  const appts = pt.appointments||[];
+  const appts = (pt.appointments||[]).filter(a=>a.status==='Upcoming');
   main.innerHTML = `
     <div class="page active">
       <div class="page-title">Welcome back, ${pt.name.split(' ')[0]} 👋</div>
@@ -661,7 +713,7 @@ function renderReports(main) {
         <div><div class="page-title">My Medical Reports</div><div class="page-sub">All your reports in one secure place. AI analysis powered by Claude.</div></div>
         <button class="btn btn-amber" onclick="triggerUpload()">+ Upload Report</button>
       </div>
-      <input type="file" id="file-upload" accept=".pdf,.jpg,.png" style="display:none" onchange="handleFileUpload(event)" />
+      <input type="file" id="file-upload" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt" style="display:none" onchange="handleFileUpload(event)" />
       <div class="upload-zone" onclick="triggerUpload()">
         <div class="icon">📂</div>
         <strong>Drop or click to upload a report</strong>
@@ -677,8 +729,8 @@ function renderReports(main) {
               <div style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;">${r.notes}</div>
             </div>
             <div class="report-actions">
-              <button class="btn btn-sm btn-amber" onclick="analyzeReport('${r.id}')">🤖 AI Analyze</button>
-              <button class="btn btn-sm btn-outline">⬇ Download</button>
+              <button class="btn btn-sm btn-amber" onclick="analyzeReport(${r.id})">🤖 AI Analyze</button>
+              <button class="btn btn-sm btn-outline" onclick="downloadReport(${r.id})">⬇ Download</button>
             </div>
           </div>
         `).join('') : `<div class="empty-state"><div class="icon">📋</div><h3>No Reports Yet</h3><p>Upload your first medical report above.</p></div>`}
@@ -689,14 +741,70 @@ function renderReports(main) {
 
 function triggerUpload() { document.getElementById('file-upload').click(); }
 
-function handleFileUpload(e) {
+async function handleFileUpload(e) {
   const file = e.target.files[0];
+  e.target.value = '';
   if (!file) return;
-  const newReport = { id:'R'+Date.now(), name:file.name.replace(/\.[^.]+$/,''), date:new Date().toISOString().slice(0,10), type:'Lab', status:'Pending', notes:'Uploaded — AI analysis pending' };
-  if (!currentUser.reports) currentUser.reports=[];
-  currentUser.reports.unshift(newReport);
-  renderPage('reports');
-  setTimeout(()=>analyzeReport(newReport.id), 500);
+  if (file.size > 5*1024*1024) { alert('That file is larger than 5 MB.'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('name', file.name.replace(/\.[^.]+$/,''));
+  const zone = document.querySelector('.upload-zone');
+  if (zone) zone.innerHTML = '<div class="icon">⏳</div><strong>Uploading ' + escHtml(file.name) + '…</strong>';
+  try {
+    const rep = await API.req('/api/reports/upload', { method:'POST', form:fd });
+    await loadData();
+    renderPage('reports');
+    setTimeout(() => analyzeReport(rep.id), 300);
+  } catch (err) { alert('Upload failed: ' + err.message); renderPage('reports'); }
+}
+
+async function openReportFile(id) {
+  try {
+    const res = await fetch('/api/reports/' + id + '/file', { headers:{ Authorization:'Bearer ' + API.token } });
+    if (!res.ok) throw new Error('File not available');
+    const url = URL.createObjectURL(await res.blob());
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { alert(e.message); }
+}
+
+// Downloads the original upload; reports filed without a file download as a text summary.
+async function downloadReport(id) {
+  const r = (currentUser.reports||[]).find(x => x.id === id);
+  if (!r) return;
+  const save = (blob, name) => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  };
+  const plain = t => { const d = document.createElement('div'); d.innerHTML = t || ''; return d.textContent; };
+  try {
+    if (r.has_file) {
+      const res = await fetch('/api/reports/' + id + '/file', { headers:{ Authorization:'Bearer ' + API.token } });
+      if (!res.ok) throw new Error('File not available');
+      const cd = res.headers.get('Content-Disposition') || '';
+      const m = cd.match(/filename="([^"]+)"/);
+      save(await res.blob(), m ? m[1] : plain(r.name));
+    } else {
+      const lines = ['MedCard AI — Medical Report', '', 'Report: ' + plain(r.name), 'Date: ' + r.date,
+        'Type: ' + plain(r.type), 'Status: ' + r.status, 'Notes: ' + plain(r.notes)];
+      if (r.ai_summary) lines.push('', 'AI Analysis:', plain(r.ai_summary));
+      save(new Blob([lines.join('\n')], { type:'text/plain' }), plain(r.name).replace(/[^\w\- ]+/g, '') + '.txt');
+    }
+  } catch (e) { alert(e.message); }
+}
+
+async function analyzeOnServer(r) {
+  try {
+    const d = await API.req('/api/reports/' + r.id + '/analyze', { method:'POST' });
+    r.ai_summary = d.analysis; r.status = d.report.status;
+    return d.analysis;
+  } catch (e) {
+    if (e.status === 503) throw new Error('NO_API_KEY');
+    throw e;
+  }
 }
 
 async function analyzeReport(reportId) {
@@ -726,7 +834,7 @@ async function analyzeReport(reportId) {
 
 Keep it clear, warm, and patient-friendly. Do not diagnose — recommend consulting their doctor for final decisions.`;
   try {
-    const res = await callClaudeAPI(prompt);
+    const res = r.ai_summary ? r.ai_summary : await analyzeOnServer(r);
     if (result) {
       result.innerHTML = `<div class="ai-result-box success">
         <div class="ai-result-header"><span style="font-size:1.2rem;">🤖</span><span class="ai-tag" style="background:rgba(45,122,79,0.1);color:var(--green);">Analysis Complete</span><span style="font-size:0.88rem;font-weight:600;color:var(--crimson-dark);">${r.name}</span></div>
@@ -734,7 +842,10 @@ Keep it clear, warm, and patient-friendly. Do not diagnose — recommend consult
       </div>`;
     }
   } catch(e) {
-    if (result) result.innerHTML=`<div class="notif warn" style="margin-top:1rem;">⚠️ AI analysis unavailable. Please try again.</div>`;
+    const why = e.message === 'NO_API_KEY'
+      ? 'AI analysis unavailable. Please try again. (Add an API key in AI Assistant for live AI — your report is saved safely.)'
+      : 'AI analysis unavailable. Please try again. (' + escHtml(e.message) + ')';
+    if (result) result.innerHTML=`<div class="notif warn" style="margin-top:1rem;">⚠️ ${why}</div>`;
   }
 }
 
@@ -752,13 +863,13 @@ function renderAIChat(main) {
           <div style="width:36px;height:36px;border-radius:50%;background:rgba(212,128,42,0.3);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🤖</div>
           <div style="flex:1;min-width:150px;">
             <div style="font-weight:700;font-size:0.92rem;color:var(--white);">MedCard AI Assistant</div>
-            <div id="chat-status-label" style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:rgba(212,128,42,0.8);">${MEDCARD_API_KEY ? 'LIVE AI MODE · ONLINE' : 'OFFLINE MODE · ADD API KEY FOR LIVE AI'}</div>
+            <div id="chat-status-label" style="font-family:'DM Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;color:rgba(212,128,42,0.8);">${aiLive() ? 'LIVE AI MODE · ONLINE' : 'OFFLINE MODE · ADD API KEY FOR LIVE AI'}</div>
           </div>
           <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0;">
-            <input id="api-key-input" type="password" placeholder="sk-ant-... API key (optional)" value="${MEDCARD_API_KEY}"
+            <input id="api-key-input" type="password" placeholder="sk-ant-... API key (optional)" value="${escHtml(MEDCARD_API_KEY)}"
               style="padding:0.35rem 0.7rem;border-radius:6px;border:1.5px solid rgba(212,128,42,0.4);background:rgba(0,0,0,0.25);color:var(--white);font-size:0.72rem;font-family:'DM Mono',monospace;width:200px;outline:none;"
-              oninput="MEDCARD_API_KEY=this.value;localStorage.setItem('medcard_api_key',this.value);document.getElementById('chat-status-label').textContent=this.value?'LIVE AI MODE · ONLINE':'OFFLINE MODE · ADD API KEY FOR LIVE AI';" />
-            <button onclick="MEDCARD_API_KEY=document.getElementById('api-key-input').value;localStorage.setItem('medcard_api_key',MEDCARD_API_KEY);document.getElementById('chat-status-label').textContent=MEDCARD_API_KEY?'LIVE AI MODE · ONLINE':'OFFLINE MODE · ADD API KEY FOR LIVE AI';"
+              oninput="saveApiKey(this.value)" />
+            <button onclick="saveApiKey(document.getElementById('api-key-input').value)"
               style="padding:0.35rem 0.7rem;border-radius:6px;border:none;background:var(--amber);color:var(--dark);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
           </div>
         </div>
@@ -854,7 +965,7 @@ async function sendChat() {
   const text = input.value.trim();
   if (!text) return;
   input.value='';
-  msgs.innerHTML += `<div class="msg user">${text}</div>`;
+  msgs.innerHTML += `<div class="msg user">${escHtml(text)}</div>`;
   const loadId='load-'+Date.now();
   msgs.innerHTML += `<div class="msg loading" id="${loadId}"><div class="ai-label">MedCard AI</div><div class="dots"><span></span><span></span><span></span></div></div>`;
   msgs.scrollTop=msgs.scrollHeight;
@@ -1059,7 +1170,7 @@ async function sendDoctorChat() {
   const text = input.value.trim();
   if (!text) return;
   input.value='';
-  msgs.innerHTML += `<div class="msg user">${text}</div>`;
+  msgs.innerHTML += `<div class="msg user">${escHtml(text)}</div>`;
   const loadId='load-'+Date.now();
   msgs.innerHTML += `<div class="msg loading" id="${loadId}"><div class="ai-label">MedCard AI</div><div class="dots"><span></span><span></span><span></span></div></div>`;
   msgs.scrollTop=msgs.scrollHeight;
@@ -1081,6 +1192,7 @@ async function sendDoctorChat() {
 function renderECard(main) {
   const pt = currentUser;
   const pid = pt.id||'XXXXXXXXXXXX';
+  const cardUrl = location.origin + '/#card=' + pt.card_token;
   const issued = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
 
   main.innerHTML = `
@@ -1100,7 +1212,7 @@ function renderECard(main) {
             </div>
             <div style="margin-top:1rem;padding:0.8rem;background:rgba(45,122,79,0.06);border-radius:8px;border:1px solid rgba(45,122,79,0.15);">
               <div style="font-size:0.75rem;color:var(--green);font-weight:600;">✅ Card Active & Verified</div>
-              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">QR encodes your patient ID, blood type, and emergency data</div>
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">QR encodes your blood type, allergies and emergency data (name &amp; ID stay hidden)</div>
             </div>
           </div>
         </div>
@@ -1119,15 +1231,17 @@ function renderECard(main) {
             <div class="card-title">Large QR Code</div>
             <div style="display:flex;justify-content:center;margin-bottom:1rem;">
               <img id="qr-large-img"
-                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports')}&color=4A0E1A&bgcolor=ffffff&margin=10"
+                src="/api/qr.png?size=8&data=${encodeURIComponent(cardUrl)}"
                 width="200" height="200"
                 style="border-radius:8px;box-shadow:0 4px 16px rgba(74,14,26,0.12);display:block;"
                 alt="Patient QR Code" />
             </div>
             <p style="font-size:0.82rem;color:var(--muted);text-align:center;">Scan at any partner hospital for instant record access — no login required.</p>
             <div style="margin-top:0.8rem;padding:0.6rem;background:var(--cream);border-radius:6px;font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--muted);word-break:break-all;text-align:center;" id="qr-url-label">
-              Open this file on your phone to scan ↑
+              ${escHtml(cardUrl)}
             </div>
+            <p style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:0.4rem;">Open this link on your phone to scan ↑</p>
+            <div style="text-align:center;margin-top:0.6rem;"><button class="btn btn-sm btn-outline" onclick="resetCardLink()">↻ Reset QR link</button></div>
           </div>
           <div class="card" style="margin-top:1.2rem;">
             <div class="card-title">Emergency Access Info</div>
@@ -1142,8 +1256,8 @@ function renderECard(main) {
 
   // Draw card and QR after DOM is ready
   setTimeout(() => {
-    const qrData = 'http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports';
-    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=128x128&data='+encodeURIComponent(qrData)+'&color=4A0E1A&bgcolor=ffffff&margin=4';
+    const qrData = cardUrl;
+    const qrUrl = '/api/qr.png?size=4&data='+encodeURIComponent(qrData);
     const qrImg = new Image();
     qrImg.crossOrigin = 'anonymous';
     qrImg.onload = () => drawECard(pt, pid, qrImg);
@@ -1320,78 +1434,122 @@ function printECard() {
   setTimeout(()=>win.print(), 500);
 }
 
-function shareECard() {
-  const canvas = document.getElementById('qr-large-canvas');
-  if (!canvas) return;
-  if (navigator.share && navigator.canShare) {
-    canvas.toBlob(blob => {
-      const file = new File([blob], 'MedCard_QR.png', {type:'image/png'});
-      if (navigator.canShare({files:[file]})) {
-        navigator.share({title:'My MedCard QR', text:`Patient: ${currentUser.name} | ID: ${currentUser.id}`, files:[file]});
+// Shares the QR image (phone share sheet); on desktop it copies the emergency link instead.
+// (The original looked for a 'qr-large-canvas' that the page never had, so the button did nothing.)
+async function shareECard() {
+  const url = location.origin + '/#card=' + currentUser.card_token;
+  try {
+    if (navigator.share && navigator.canShare) {
+      const img = document.getElementById('qr-large-img');
+      const blob = await (await fetch(img ? img.src : '/api/qr.png?size=8&data=' + encodeURIComponent(url))).blob();
+      const file = new File([blob], 'MedCard_QR.png', { type:'image/png' });
+      if (navigator.canShare({ files:[file] })) {
+        await navigator.share({ title:'My MedCard QR', text:'MedCard emergency card: ' + url, files:[file] });
         return;
       }
-      fallbackShare();
-    });
-  } else { fallbackShare(); }
+    }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  fallbackShare();
+}
+
+async function resetCardLink() {
+  if (!confirm('Create a new QR link? Old printed cards will stop working.')) return;
+  try { await API.req('/api/card/regenerate', { method:'POST' }); await loadData(); renderPage('ecard'); }
+  catch (e) { alert(e.message); }
 }
 
 function fallbackShare() {
-  const url = 'http://172.18.219.176:8080/medcard-fixed%20(10).html#qr-reports';
+  const url = location.origin + '/#card=' + currentUser.card_token;
   navigator.clipboard?.writeText(url).then(()=>alert('✅ QR URL copied:\n'+url)).catch(()=>alert('QR URL: '+url));
 }
 
 // ============================================================
 // APPOINTMENTS
 // ============================================================
+function apptBadge(st) { return st==='Completed' ? 'green' : st==='Cancelled' ? 'red' : 'blue'; }
 function renderAppointments(main) {
-  const appts = currentUser.appointments||[];
+  const appts = (currentUser.appointments||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const today = new Date().toISOString().slice(0,10);
   main.innerHTML = `
     <div class="page active">
       <div class="section-head">
         <div><div class="page-title">Appointments</div><div class="page-sub">Your scheduled visits and consultations.</div></div>
         <button class="btn btn-amber" onclick="bookAppointment()">+ Book New</button>
       </div>
+      <div class="card" id="book-form" style="display:none;margin-bottom:1.2rem;">
+        <div class="card-title">Book an Appointment</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Doctor</label>
+            <select class="form-input" id="book-doctor">${DB.doctors.map(d=>`<option value="${d.id}">${d.name} — ${d.specialty}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Date</label><input class="form-input" id="book-date" type="date" min="${today}" value="${today}" /></div>
+        </div>
+        <div class="form-group"><label class="form-label">Reason (optional)</label><input class="form-input" id="book-reason" placeholder="e.g. BP follow-up" maxlength="200" /></div>
+        <button class="btn btn-primary" id="book-submit" onclick="submitBooking()">Confirm Booking</button>
+        <div id="book-result"></div>
+      </div>
       ${appts.length ? appts.map(a => `
         <div class="appt-card">
           <div class="appt-date"><div class="appt-day">${a.day}</div><div class="appt-mon">${a.month}</div></div>
           <div class="appt-divider"></div>
-          <div class="appt-info"><div class="appt-title">${a.specialty} Consultation</div><div class="appt-doctor">${a.doctor}</div></div>
-          <span class="badge blue">${a.status}</span>
-          <button class="btn btn-sm btn-outline" style="margin-left:0.5rem;">Cancel</button>
+          <div class="appt-info"><div class="appt-title">${a.specialty} Consultation</div><div class="appt-doctor">${a.doctor}${a.reason ? ' · ' + a.reason : ''}</div></div>
+          <span class="badge ${apptBadge(a.status)}">${a.status}</span>
+          ${a.status==='Upcoming' ? `<button class="btn btn-sm btn-outline" style="margin-left:0.5rem;" onclick="setApptStatus(${a.id},'Cancelled','appointments')">Cancel</button>` : ''}
         </div>`).join('') : `<div class="empty-state"><div class="icon">📅</div><h3>No Appointments</h3><p>Book your first appointment below.</p></div>`}
     </div>`;
 }
 
 function bookAppointment() {
-  const doctor = DB.doctors[Math.floor(Math.random()*DB.doctors.length)];
-  const days=['05','12','19','26']; const months=['APR','MAY'];
-  const newAppt={id:'A'+Date.now(),day:days[Math.floor(Math.random()*days.length)],month:months[Math.floor(Math.random()*months.length)],doctor:doctor.name,specialty:doctor.specialty,status:'Upcoming'};
-  if(!currentUser.appointments)currentUser.appointments=[];
-  currentUser.appointments.push(newAppt);
-  renderPage('appointments');
+  const f = document.getElementById('book-form');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+async function submitBooking() {
+  const btn = document.getElementById('book-submit'); btn.disabled = true;
+  try {
+    await API.req('/api/appointments', { method:'POST', body:{ doctor_id:document.getElementById('book-doctor').value,
+      date:document.getElementById('book-date').value, reason:document.getElementById('book-reason').value.trim() } });
+    await loadData();
+    renderPage('appointments');
+  } catch (e) {
+    document.getElementById('book-result').innerHTML = `<div class="notif warn" style="margin-top:1rem;">⚠️ ${escHtml(e.message)}</div>`;
+    btn.disabled = false;
+  }
+}
+async function setApptStatus(id, status, page) {
+  if (status==='Cancelled' && !confirm('Cancel this appointment?')) return;
+  try { await API.req('/api/appointments/' + id, { method:'PATCH', body:{ status } }); await loadData(); renderPage(page); }
+  catch (e) { alert(e.message); }
 }
 
 // ============================================================
 // HEALTH METRICS
 // ============================================================
 function renderMetrics(main) {
-  const metrics = [
-    {name:'Blood Pressure',val:'128/82',pct:72,state:'warn',unit:'mmHg'},
-    {name:'Heart Rate',val:'76 bpm',pct:60,state:'ok',unit:'bpm'},
-    {name:'Blood Sugar',val:'5.6 mmol/L',pct:55,state:'ok',unit:'mmol/L'},
-    {name:'Hemoglobin',val:'13.2 g/dL',pct:80,state:'ok',unit:'g/dL'},
-    {name:'Cholesterol',val:'195 mg/dL',pct:65,state:'ok',unit:'mg/dL'},
-    {name:'BMI',val:'24.5',pct:70,state:'ok',unit:'kg/m²'},
-  ];
+  const v = (currentUser.vitals||[])[0];
+  const metrics = buildMetrics(v);
   main.innerHTML = `
     <div class="page active">
       <div class="section-head">
         <div><div class="page-title">Health Metrics</div><div class="page-sub">Tracked vitals and AI-powered recommendations based on your readings.</div></div>
         <button class="btn btn-amber" onclick="getMetricsInsights()">🤖 Get AI Insights</button>
       </div>
+      <div class="card" style="margin-bottom:1.2rem;">
+        <div class="card-title">Log a New Reading</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">BP systolic (mmHg)</label><input class="form-input" id="vt-systolic" type="number" placeholder="120" /></div>
+          <div class="form-group"><label class="form-label">BP diastolic (mmHg)</label><input class="form-input" id="vt-diastolic" type="number" placeholder="80" /></div>
+          <div class="form-group"><label class="form-label">Heart rate (bpm)</label><input class="form-input" id="vt-heart_rate" type="number" placeholder="72" /></div>
+          <div class="form-group"><label class="form-label">Blood sugar (mmol/L)</label><input class="form-input" id="vt-blood_sugar" type="number" step="0.1" placeholder="5.2" /></div>
+          <div class="form-group"><label class="form-label">Hemoglobin (g/dL)</label><input class="form-input" id="vt-hemoglobin" type="number" step="0.1" placeholder="13.5" /></div>
+          <div class="form-group"><label class="form-label">Cholesterol (mg/dL)</label><input class="form-input" id="vt-cholesterol" type="number" placeholder="180" /></div>
+          <div class="form-group"><label class="form-label">BMI</label><input class="form-input" id="vt-bmi" type="number" step="0.1" placeholder="23.0" /></div>
+        </div>
+        <button class="btn btn-primary" id="vt-submit" onclick="logVitals()">Save Reading</button>
+        <div id="vt-result"></div>
+      </div>
       <div class="grid-2">
         <div class="card">
-          <div class="card-title">Vital Signs</div>
+          <div class="card-title">Vital Signs ${v ? `<span style="font-size:0.7rem;color:var(--muted);font-weight:400;">· last reading ${v.recorded_at.replace('T',' ')}</span>` : ''}</div>
+          ${metrics.length ? '' : '<p style="font-size:0.85rem;color:var(--muted);">No readings yet. Log your first one below.</p>'}
           ${metrics.map(m => `
             <div class="metric-row">
               <div class="metric-name">${m.name}</div>
@@ -1418,6 +1576,39 @@ function renderMetrics(main) {
     </div>`;
 }
 
+function buildMetrics(v) {
+  if (!v) return [];
+  const m = [];
+  const pct = (x, lo, hi) => Math.max(5, Math.min(100, Math.round((x-lo)/(hi-lo)*100)));
+  if (v.systolic!=null && v.diastolic!=null) m.push({name:'Blood Pressure', val:`${v.systolic}/${v.diastolic}`, pct:pct(v.systolic,80,180),
+    state:(v.systolic>=140||v.diastolic>=90)?'danger':(v.systolic>=120||v.diastolic>=80)?'warn':'ok'});
+  if (v.heart_rate!=null) m.push({name:'Heart Rate', val:v.heart_rate+' bpm', pct:pct(v.heart_rate,40,140),
+    state:(v.heart_rate<50||v.heart_rate>110)?'danger':(v.heart_rate<60||v.heart_rate>100)?'warn':'ok'});
+  if (v.blood_sugar!=null) m.push({name:'Blood Sugar', val:v.blood_sugar+' mmol/L', pct:pct(v.blood_sugar,2,12),
+    state:v.blood_sugar>=7?'danger':(v.blood_sugar>=5.6||v.blood_sugar<3.9)?'warn':'ok'});
+  if (v.hemoglobin!=null) m.push({name:'Hemoglobin', val:v.hemoglobin+' g/dL', pct:pct(v.hemoglobin,6,18),
+    state:v.hemoglobin<10?'danger':v.hemoglobin<12?'warn':'ok'});
+  if (v.cholesterol!=null) m.push({name:'Cholesterol', val:v.cholesterol+' mg/dL', pct:pct(v.cholesterol,100,300),
+    state:v.cholesterol>=240?'danger':v.cholesterol>=200?'warn':'ok'});
+  if (v.bmi!=null) m.push({name:'BMI', val:String(v.bmi), pct:pct(v.bmi,15,40),
+    state:(v.bmi>=30||v.bmi<17)?'danger':(v.bmi>=25||v.bmi<18.5)?'warn':'ok'});
+  return m;
+}
+function vitalsText(v) {
+  if (!v) return 'No vitals logged yet.';
+  return buildMetrics(v).map(m => `${m.name}: ${m.val} (${m.state==='ok'?'normal':m.state==='warn'?'borderline':'high/abnormal'})`).join(', ');
+}
+async function logVitals() {
+  const body = {};
+  ['systolic','diastolic','heart_rate','blood_sugar','hemoglobin','cholesterol','bmi'].forEach(k => {
+    const raw = document.getElementById('vt-'+k).value;
+    if (raw !== '') body[k] = parseFloat(raw);
+  });
+  const out = document.getElementById('vt-result');
+  try { await API.req('/api/vitals', { method:'POST', body }); await loadData(); renderPage('metrics'); }
+  catch (e) { out.innerHTML = `<div class="notif warn" style="margin-top:1rem;">⚠️ ${escHtml(e.message)}</div>`; }
+}
+
 async function getMetricsInsights() {
   const el = document.getElementById('metrics-ai-insights');
   el.innerHTML = `<div class="ai-result-box" style="margin-top:1.2rem;">
@@ -1427,7 +1618,7 @@ async function getMetricsInsights() {
   const pt = currentUser;
   const prompt = `You are MedCard AI providing health insights and recommendations. Patient: ${pt.name}, Blood: ${pt.blood}, Conditions: ${(pt.conditions||[]).join(',')||'None'}, Allergies: ${pt.allergies||'None'}.
 
-Current vitals: Blood Pressure: 128/82 mmHg (slightly elevated), Heart Rate: 76 bpm (normal), Blood Sugar: 5.6 mmol/L (normal), Hemoglobin: 13.2 g/dL (normal), Cholesterol: 195 mg/dL (borderline), BMI: 24.5 (healthy).
+Current vitals: ${vitalsText((pt.vitals||[])[0])}.
 
 Reports: ${(pt.reports||[]).map(r=>`${r.name}: ${r.status} — ${r.notes}`).join('; ')||'None'}.
 
@@ -1486,7 +1677,7 @@ function renderPolicies(main) {
 // ============================================================
 function renderDoctorDashboard(main) {
   const total = DB.patients.reduce((s,p)=>s+p.reports.length,0);
-  const appts = DB.patients.reduce((s,p)=>s+p.appointments.length,0);
+  const appts = (currentUser.appointments||[]).filter(a=>a.status==='Upcoming').length;
   main.innerHTML = `
     <div class="page active">
       <div class="page-title">Doctor Dashboard</div>
@@ -1599,7 +1790,9 @@ function renderDoctorPatients(main) {
 }
 
 function renderDoctorAppointments(main) {
-  const allAppts = DB.patients.flatMap(p=>p.appointments.map(a=>({...a,patientName:p.name})));
+  // All patients' appointments (as in the original). A doctor can update only the visits booked with them.
+  const allAppts = DB.patients.flatMap(p => (p.appointments||[]).map(a => ({...a, patientName:p.name})))
+    .sort((a,b) => a.date.localeCompare(b.date));
   main.innerHTML = `
     <div class="page active">
       <div class="page-title">Appointment Schedule</div>
@@ -1607,14 +1800,17 @@ function renderDoctorAppointments(main) {
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Date</th><th>Patient</th><th>Specialty</th><th>Status</th></tr></thead>
+            <thead><tr><th>Date</th><th>Patient</th><th>Specialty</th><th>Doctor</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>
               ${allAppts.map(a=>`<tr>
                 <td><strong>${a.day} ${a.month}</strong></td>
                 <td>${a.patientName}</td>
                 <td>${a.specialty}</td>
-                <td><span class="badge blue">${a.status}</span></td>
-              </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:var(--muted);">No appointments.</td></tr>'}
+                <td>${a.doctor}</td>
+                <td><span class="badge ${apptBadge(a.status)}">${a.status}</span></td>
+                <td>${a.status==='Upcoming' && (a.doctor_id===currentUser.id || currentRole==='admin') ? `<button class="btn btn-sm btn-primary" onclick="setApptStatus(${a.id},'Completed','doc-appointments')">✓ Done</button>
+                  <button class="btn btn-sm btn-outline" onclick="setApptStatus(${a.id},'Cancelled','doc-appointments')">Cancel</button>` : '—'}</td>
+              </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);">No appointments.</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -1676,18 +1872,21 @@ function renderAddReport(main) {
     </div>`;
 }
 
-function submitReport() {
+async function submitReport() {
   const pid = document.getElementById('rpt-patient').value;
   const name = document.getElementById('rpt-name').value.trim();
   const type = document.getElementById('rpt-type').value;
   const status = document.getElementById('rpt-status').value;
   const notes = document.getElementById('rpt-notes').value.trim();
+  const out = document.getElementById('report-submit-result');
   if (!name) { alert('Report name required.'); return; }
-  const pt = DB.patients.find(p=>p.id===pid);
-  if (pt) {
-    pt.reports.unshift({id:'R'+Date.now(),name,date:new Date().toISOString().slice(0,10),type,status,notes});
-    document.getElementById('report-submit-result').innerHTML=`<div class="notif success" style="margin-top:1rem;">✅ Report "${name}" added to ${pt.name}'s record successfully.</div>`;
-  }
+  try {
+    await API.req('/api/reports', { method:'POST', body:{ patient_id:pid, name, type, status, notes } });
+    await loadData();
+    const pt = DB.patients.find(p=>p.id===pid);
+    out.innerHTML = `<div class="notif success" style="margin-top:1rem;">✅ Report "${escHtml(name)}" added to ${pt ? pt.name : 'the patient'}'s record successfully.</div>`;
+    document.getElementById('rpt-name').value = ''; document.getElementById('rpt-notes').value = '';
+  } catch (e) { out.innerHTML = `<div class="notif warn" style="margin-top:1rem;">⚠️ ${escHtml(e.message)}</div>`; }
 }
 
 // ============================================================
@@ -1799,11 +1998,11 @@ function renderAdminPolicies(main) {
     </div>`;
 }
 
-function addPolicy() {
+async function addPolicy() {
   const title = prompt('Enter policy title:');
   if (!title) return;
-  DB.policies.unshift({id:'P'+Date.now(),title,date:new Date().toISOString().slice(0,10),status:'Active'});
-  renderPage('admin-policies');
+  try { await API.req('/api/policies', { method:'POST', body:{ title } }); await loadData(); renderPage('admin-policies'); }
+  catch (e) { alert(e.message); }
 }
 
 function renderAdminAnalytics(main) {
@@ -1833,7 +2032,6 @@ function renderAdminAnalytics(main) {
 // ============================================================
 // CLAUDE API
 // ============================================================
-let MEDCARD_API_KEY = localStorage.getItem('medcard_api_key') || '';
 
 function getOfflineFallback(question) {
   const pt = currentUser;
@@ -1907,36 +2105,18 @@ function getOfflineFallback(question) {
 }
 
 async function callClaudeAPI(userMessage, systemPrompt, conversationHistory=[]) {
-  const key = MEDCARD_API_KEY || localStorage.getItem('medcard_api_key') || '';
-  if (!key) throw new Error('NO_API_KEY');
-
-  const messages = [...conversationHistory];
-  if (!messages.length || messages[messages.length-1].role!=='user') {
-    messages.push({role:'user',content:userMessage});
+  // Goes through our backend: the AI key never reaches the browser, and replies are escaped before display.
+  try {
+    const d = await API.req('/api/ai/complete', { method:'POST',
+      body:{ prompt:userMessage, system:systemPrompt || null, history:conversationHistory } });
+    return escHtml(d.text);
+  } catch (e) {
+    if (e.status === 503) throw new Error('NO_API_KEY');
+    if (e.status === 429) throw new Error('AI limit reached for this hour. Please try again later.');
+    throw e;
   }
-  const body = {
-    model:'claude-sonnet-4-20250514',
-    max_tokens:1000,
-    system: systemPrompt||'You are MedCard AI, an intelligent medical assistant for the AI Integrated Medical E-Card platform. Be helpful, concise, and health-literate.',
-    messages
-  };
-  const response = await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': key,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify(body)
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(()=>({}));
-    throw new Error(err.error?.message || 'API error '+response.status);
-  }
-  const data = await response.json();
-  return data.content.map(b=>b.text||'').join('');
 }
+
 </script>
 
 <!-- ========== EMBEDDED QR REPORTS PAGE ========== -->
@@ -2180,11 +2360,71 @@ function qrpToggle(btn) {
   btn.textContent = open ? '▼ View Full Report' : '▲ Close Report';
 }
 // Check hash on load and on hashchange
-function checkHash() {
-  if (window.location.hash === '#qr-reports') openQRReports();
+function renderPublicCard(box, c) {
+  const n = st => c.reports.filter(r => r.status === st).length;
+  const icon = t => ({Lab:'🧪',Cardiac:'❤️',Radiology:'🩻',Pulmonology:'🫁',Allergy:'🌿',Immunology:'🌿',Biochemistry:'🩸',Endocrinology:'💉'})[t] || '📄';
+  const col = f => f==='bad' ? '#C0392B' : f==='warn' ? '#D4802A' : '';
+  const fmtDate = d => new Date(d + 'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
+  const detail = r => {
+    const vals = r.values.length ? r.values : [['Date', fmtDate(r.date), 'ok'], ['Type', r.type, 'ok'], ['Status', r.status, r.status==='Abnormal'?'bad':r.status==='Normal'?'ok':'warn'], ['Filed by', r.added_by || 'Patient upload', 'ok']];
+    const note = r.conclusion
+      ? (r.conclusion_flag === 'ok' ? `<div class="qrp-rnt">${r.conclusion.replace(/^([^:]{1,40}:)/, '<strong>$1</strong>')}</div>`
+         : `<div class="qrp-rnt" style="border-left:3px solid ${col(r.conclusion_flag)};padding-left:.7rem">${r.conclusion.replace(/^([^:]{1,40}:)/, '<strong>$1</strong>')}</div>`)
+      : '';
+    const ai = r.ai_summary ? `<div class="qrp-rnt" style="white-space:pre-wrap;margin-top:.6rem;"><strong>🤖 AI Analysis:</strong>\n${r.ai_summary}</div>` : '';
+    return `<button class="qrp-exp" onclick="qrpToggle(this)">▼ View Full Report</button>
+      <div class="qrp-dp">
+        <div class="qrp-dg">${vals.map(([l, v, f]) => `<div class="qrp-di"><div class="qrp-dl">${l}</div><div class="qrp-dv"${col(f) ? ` style="color:${col(f)}"` : ''}>${v}</div></div>`).join('')}</div>
+        ${note}${ai}
+      </div>`;
+  };
+  const bdg = st => st==='Normal'?'g':st==='Abnormal'?'r':'a';
+  box.innerHTML = `
+    <div class="qrp-chips">
+      <div class="qrp-chip"><div class="qrp-chip-n">${c.reports.length}</div><div class="qrp-chip-l">Total</div></div>
+      <div class="qrp-chip"><div class="qrp-chip-n" style="color:#C0392B">${n('Abnormal')}</div><div class="qrp-chip-l">Abnormal</div></div>
+      <div class="qrp-chip"><div class="qrp-chip-n" style="color:#D4802A">${n('Review')+n('Pending')}</div><div class="qrp-chip-l">Review</div></div>
+      <div class="qrp-chip"><div class="qrp-chip-n" style="color:#2D7A4F">${n('Normal')}</div><div class="qrp-chip-l">Normal</div></div>
+    </div>
+    <div class="qrp-st">Emergency Information</div>
+    <div class="qrp-rc"><div class="qrp-dg" style="display:grid;">
+      <div class="qrp-di"><div class="qrp-dl">Blood Type</div><div class="qrp-dv">${c.blood}</div></div>
+      <div class="qrp-di"><div class="qrp-dl">Allergies</div><div class="qrp-dv">${c.allergies}</div></div>
+      <div class="qrp-di"><div class="qrp-dl">Conditions</div><div class="qrp-dv">${c.conditions.join(', ')||'None'}</div></div>
+      <div class="qrp-di"><div class="qrp-dl">Emergency Contact</div><div class="qrp-dv">${c.emergency_contact||'—'}</div></div>
+    </div></div>
+    <div class="qrp-st">Patient Medical Reports</div>
+    <div class="qrp-ss">All reports from MedCard AI — displayed without personal identifiers per emergency access protocol.</div>
+    ${c.reports.map(r => `
+      <div class="qrp-rc"><div class="qrp-rh">
+        <div class="qrp-ri">${icon(r.type)}</div>
+        <div class="qrp-rb">
+          <div class="qrp-rn">${r.name}</div>
+          <div class="qrp-rm"><span>${fmtDate(r.date)}</span><span>${r.type}</span><span class="qrp-bdg ${bdg(r.status)}">${r.status}</span></div>
+          <div class="qrp-rnt">${r.notes}</div>
+          ${detail(r)}
+        </div>
+      </div></div>`).join('') || '<div class="qrp-ss">No reports on file.</div>'}`;
+}
+async function checkHash() {
+  const m = window.location.hash.match(/^#card=([\w-]+)$/);
+  if (!m) return;
+  const box = document.querySelector('#qr-reports-page .qrp-c');
+  box.innerHTML = '<p style="text-align:center;padding:2rem;color:#8A7070;">Loading emergency card…</p>';
+  openQRReports();
+  try {
+    const r = await fetch('/api/public/card/' + m[1]);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.detail || 'Card not found');
+    renderPublicCard(box, data);
+  } catch (e) { box.innerHTML = `<div class="qrp-ss" style="text-align:center;padding:2rem;">⚠️ ${escHtml(e.message)}</div>`; }
 }
 window.addEventListener('hashchange', checkHash);
 window.addEventListener('load', checkHash);
+window.addEventListener('load', async () => {
+  if (window.location.hash.startsWith('#card=') || !API.token) return;
+  try { await loadData(); bootApp(); } catch (e) { API.setToken(null); }
+});
 </script>
 
 </body>

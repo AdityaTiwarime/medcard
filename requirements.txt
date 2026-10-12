@@ -1,0 +1,14 @@
+fastapi==0.143.0
+uvicorn==0.53.0
+sqlalchemy==2.1.4
+psycopg2-binary==2.9.13
+bcrypt==5.0.0
+pyjwt==2.14.0
+pydantic==2.13.5
+email-validator==2.3.0
+python-multipart==0.0.32
+pypdf==5.9.0
+qrcode==8.2
+pillow==12.3.0
+anthropic==1.13.0
+openai==3.27.0
